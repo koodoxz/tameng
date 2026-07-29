@@ -1,0 +1,33 @@
+# SVALINN-GO Docker Compose
+version: '3.8'
+
+services:
+  svalinn:
+    build: .
+    container_name: svalinn
+    restart: unless-stopped
+    ports:
+      - "10000:10000"
+      - "10443:10443"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs:ro
+    environment:
+      - SVALINN_GOD_KEY=${SVALINN_GOD_KEY}
+      - SVALINN_API_KEY=${SVALINN_API_KEY}
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:10000/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    networks:
+      - svalinn
+
+networks:
+  svalinn:
+    driver: bridge

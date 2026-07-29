@@ -1,0 +1,24 @@
+[Unit]
+Description=SVALINN v9.0 Security Gateway
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/svalinn
+ExecStart=/opt/svalinn/svalinn --config /opt/svalinn/config.production.yaml
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

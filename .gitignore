@@ -1,0 +1,35 @@
+# Compiled binaries -- never commit these (they embed build-machine paths
+# and any strings baked in at compile time). Anchored to repo root (leading
+# slash) so these do NOT also match the cmd/svalinn/ source directory --
+# an unanchored "svalinn" pattern previously excluded the module's actual
+# entry point (cmd/svalinn/main.go) from the commit entirely.
+/svalinn
+/svalinn.exe
+/tameng
+/tameng.exe
+*.exe
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Runtime data (actor tracking, evolved rules, ML snapshots -- not source)
+data/attacker-memory.json
+data/evolved-rules.json
+*.db
+
+# Build artifacts
+build/
+dist/
+*.test
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+
+# Internal-only reports generated during open-source preparation --
+# never publish these, they document real secrets found during sanitization
+FORK_REPORT.md
+SANITIZATION_REPORT.md

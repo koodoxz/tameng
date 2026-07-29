@@ -1,0 +1,272 @@
+# SVALINN Configuration
+# Security Shield - AEGIS Ecosystem
+
+server:
+  http_addr: ":10000"
+  https_addr: ":10443"
+  tls_cert: ""  # Path to TLS certificate
+  tls_key: ""   # Path to TLS private key
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120s
+
+security:
+  god_mode_key: "${SVALINN_GOD_KEY}"
+  api_keys:
+    - "${SVALINN_API_KEY}"
+  mitnick_user: "${SVALINN_MITNICK_USER}"
+  mitnick_pass: "${SVALINN_MITNICK_PASS}"
+  trusted_proxies:
+    - "127.0.0.1"
+    - "10.0.0.0/8"
+    - "172.16.0.0/12"
+    - "192.168.0.0/16"
+  rate_limit_rps: 100
+  rate_limit_burst: 200
+
+waf:
+  enabled: true
+  signatures_path: "data/signatures.json"
+  block_threshold: 0.8
+  log_threshold: 0.5
+  whitelisted_paths:
+    - "/health"
+    - "/metrics"
+  whitelisted_ips:
+    - "127.0.0.1"
+
+ml_waf:
+  enabled: true
+  model_path: "/root/data/models/threat_scorer.txt"
+  alert_threshold: 70
+  block_threshold: 85
+  ml_weight: 0.7
+  anomaly_weight: 0.3
+
+ddos:
+  enabled: true
+  phase3_enabled: true
+  challenge_enabled: true
+  throttle_enabled: true
+  block_enabled: true
+  ewma_window: 10s
+  threshold_rps: 1000
+  burst_threshold: 500
+  block_duration: 5m
+  challenge_duration: 1m
+
+actor:
+  enabled: true
+  max_actors: 100000
+  eviction_interval: 1m
+  mitnick_enabled: true
+  gray_zone_size: 10000
+  promotion_threshold: 5
+
+intel:
+  enabled: true
+  mitre_enabled: true
+  stix_enabled: true
+  feeds_enabled: false
+  sync_interval: 1h
+
+ml:
+  enabled: true
+  engine_url: "http://localhost:8000"
+  timeout: 5s
+  fallback_to_rules: true
+
+database:
+  type: "sqlite"
+  path: "data/svalinn.db"
+  in_memory: false
+
+logging:
+  level: "info"
+  format: "json"
+  output_path: ""
+
+# AEGIS Ecosystem Integration (ODIN + MIMIR)
+ecosystem:
+  enabled: true
+  odin_url: "https://dns.example.com"
+  odin_api_key: "${ODIN_API_KEY}"
+  mimir_ip: "203.0.113.10"
+  sync_workers: 2
+  # Source-IP allowlist for the four ecosystem endpoints:
+  #   /api/v1/shield/threats, /api/v1/heimdall/report,
+  #   /api/v1/dns-events, /api/v1/dns-blocklist
+  # These endpoints bypass the entire middleware and auth chain, so this list is
+  # the ONLY access control protecting them. Non-listed callers receive 403.
+  #
+  # Exact IP addresses only -- CIDR ranges are NOT supported and never match.
+  # FAIL-CLOSED: an empty or unset list denies every ecosystem request, which
+  # will break HEIMDALL/MIMIR sync until populated.
+  allowed_ips:
+    - "203.0.113.20"  # ODIN VPS (HEIMDALL)
+    - "203.0.113.10"    # MIMIR VPS (HEIMDALL-RS)
+
+# Observatory (Hall of Fame)
+observatory:
+  enabled: true
+  cache_ttl: 5s
+  top_actors: 10
+
+behavioral_baseline:
+  enabled: true
+  deviation_threshold: 0.7
+  min_samples_for_baseline: 50
+  block_threshold: 0.9
+
+behavioral_detector:
+  enabled: true
+  cleanup_interval: 5m
+  credential_stuffing_threshold: 20
+  api_enumeration_threshold: 40
+  scraping_threshold: 120
+  error_rate_threshold: 0.4
+  alert_score_threshold: 60
+  block_score_threshold: 85
+  suspicious_session_threshold: 5
+  temporal_anomaly_threshold: 20
+  max_tracked_events: 500
+  session_window: 10m
+  short_window: 1m
+  medium_window: 5m
+  long_window: 1h
+
+malware_behavior:
+  enabled: true
+  scoring_threshold: 50
+  alert_threshold: 50
+  block_threshold: 85
+
+payload_signature:
+  enabled: true
+  yara_enabled: true
+  sigma_enabled: true
+  snort_enabled: true
+
+advanced_egress:
+  enabled: true
+  blocked_countries: ["RU", "CN", "KP", "IR", "BY", "SY"]
+  allowed_countries: []
+  geofence_mode: "alert"
+  velocity_window: 1m
+  max_bytes_per_window: 10485760
+  max_requests_per_window: 100
+  velocity_spike_multiplier: 5
+  trusted_package_hosts: ["registry.npmjs.org", "registry.yarnpkg.com", "github.com", "raw.githubusercontent.com", "api.github.com"]
+  max_encoded_payload_size: 10000
+  entropy_threshold: 4.5
+
+stix_intel:
+  enabled: true
+  default_tlp: "AMBER"
+  ioc_ttl: 24h
+  max_indicators: 10000
+  confidence_threshold: 50
+  block_on_match: false
+
+business_logic_abuse:
+  enabled: true
+  mode: "detect"
+  flow_window: 5m
+  max_actions: 120
+  max_sensitive_hits: 15
+  sensitive_paths: ["/admin", "/billing", "/checkout", "/password", "/token", "/api/v9"]
+  cleanup_interval: 2m
+
+semantic_payload:
+  enabled: true
+  alert_threshold: 60
+  block_threshold: 85
+
+response_encrypt:
+  enabled: false
+  protect_paths: ["/admin", "/dashboard", "/api/v9"]
+  exclude_paths: ["/health", "/metrics"]
+  token_ttl: 5m
+  encrypt_html: true
+  encrypt_js: true
+
+proof_of_work:
+  enabled: false
+  difficulty: 4
+  token_ttl: 2m
+  protected_paths: ["/api/v9"]
+  header_token: "X-Svalinn-PoW-Token"
+  header_nonce: "X-Svalinn-PoW-Nonce"
+
+protocol_guard:
+  enabled: true
+  max_graphql_depth: 10
+  max_graphql_complexity: 1000
+  ws_rate_limit: 100
+  block_on_violation: false
+
+exploitation_detector:
+  enabled: true
+  heap_spray_threshold: 50
+  rop_chain_threshold: 30
+  shellcode_threshold: 70
+  injection_threshold: 80
+  escalation_threshold: 60
+  alert_threshold: 70
+  block_threshold: 85
+
+evasion_detector:
+  enabled: true
+  amsi_threshold: 35
+  etw_threshold: 30
+  unhooking_threshold: 40
+  sandbox_threshold: 25
+  syscall_threshold: 45
+  module_threshold: 35
+  timestamp_threshold: 30
+  alert_threshold: 70
+  block_threshold: 75
+
+network_attack_detector:
+  enabled: true
+  arp_threshold: 25
+  dns_threshold: 30
+  smb_threshold: 35
+  kerberoast_threshold: 40
+  poisoning_threshold: 30
+  ptx_threshold: 45
+  alert_threshold: 70
+  block_threshold: 85
+  connection_ttl: 10m
+
+ad_attack_detector:
+  enabled: true
+  dcsync_threshold: 50
+  golden_threshold: 50
+  silver_threshold: 45
+  skeleton_threshold: 40
+  adminsd_threshold: 40
+  gpo_threshold: 35
+  bloodhound_threshold: 30
+  ldap_threshold: 25
+  alert_threshold: 70
+  block_threshold: 85
+
+attack_forecast:
+  enabled: true
+  forecast_horizon: 24
+  trend_threshold: 0.15
+  spike_threshold: 2.0
+  quiet_threshold: 0.3
+  confidence_level: 0.95
+  max_history_size: 100000
+  cleanup_interval_minutes: 60
+
+attack_chain:
+  enabled: true
+  chain_timeout: 1h
+  alert_threshold: 0.7
+  beacon_threshold: 0.8
+
+triangulation:
+  enabled: true
