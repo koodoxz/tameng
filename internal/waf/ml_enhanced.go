@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/ml"
+	"github.com/koodoxz/tameng/internal/ml"
 )
 
 // MLEnhancedConfig controls ML-enhanced WAF behavior.

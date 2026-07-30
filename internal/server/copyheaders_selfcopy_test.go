@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/egress"
-	"github.com/aegis/svalinn/internal/logger"
-	"github.com/aegis/svalinn/internal/response"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/egress"
+	"github.com/koodoxz/tameng/internal/logger"
+	"github.com/koodoxz/tameng/internal/response"
 )
 
 // REQ SVALINN-COPYHEADERS-SELFCOPY-001

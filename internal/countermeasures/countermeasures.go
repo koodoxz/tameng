@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/actor"
+	"github.com/koodoxz/tameng/internal/actor"
 )
 
 const (

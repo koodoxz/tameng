@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aegis/svalinn/internal/actor"
-	"github.com/aegis/svalinn/internal/logger"
+	"github.com/koodoxz/tameng/internal/actor"
+	"github.com/koodoxz/tameng/internal/logger"
 )
 
 // syncBuffer makes bytes.Buffer safe for the concurrent write (from the

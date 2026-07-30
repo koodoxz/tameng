@@ -1,4 +1,4 @@
-module github.com/aegis/svalinn
+module github.com/koodoxz/tameng
 
 go 1.26.5
 

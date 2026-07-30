@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/actor"
-	"github.com/aegis/svalinn/internal/fingerprint"
+	"github.com/koodoxz/tameng/internal/actor"
+	"github.com/koodoxz/tameng/internal/fingerprint"
 )
 
 // Countermeasure types

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/scanbudget"
+	"github.com/koodoxz/tameng/internal/scanbudget"
 	ahocorasick "github.com/petar-dambovaliev/aho-corasick"
 )
 

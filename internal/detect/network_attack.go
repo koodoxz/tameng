@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/literalextract"
+	"github.com/koodoxz/tameng/internal/literalextract"
 )
 
 // NetworkAttackConfig configures network attack detector thresholds.

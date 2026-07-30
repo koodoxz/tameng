@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/logger"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/logger"
 )
 
 // newEcosystemFuzzServer builds the smallest Server that can drive the two

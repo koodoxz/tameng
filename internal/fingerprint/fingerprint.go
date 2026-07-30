@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/netutil"
+	"github.com/koodoxz/tameng/internal/netutil"
 )
 
 // Fingerprint represents a device/client fingerprint

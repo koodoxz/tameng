@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/logger"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/logger"
 	"github.com/gorilla/mux"
 )
 

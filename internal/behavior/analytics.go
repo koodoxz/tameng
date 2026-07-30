@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/netutil"
+	"github.com/koodoxz/tameng/internal/netutil"
 )
 
 // Analytics performs user behavior analysis

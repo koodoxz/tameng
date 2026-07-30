@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/logger"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/logger"
 )
 
 // Phase 7 (REQ SVALINN-CLIENTIP-SPOOF-001): getClientIP runs on every request,

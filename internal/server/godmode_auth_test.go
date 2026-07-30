@@ -3,8 +3,8 @@ package server
 import (
 	"testing"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/logger"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/logger"
 )
 
 func TestNew_FailsClosedWhenGodModeKeyEmpty(t *testing.T) {

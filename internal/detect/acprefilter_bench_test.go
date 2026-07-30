@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aegis/svalinn/internal/literalextract"
+	"github.com/koodoxz/tameng/internal/literalextract"
 )
 
 // Phase 7 benchmarks for REQ SVALINN-DETECTPREFILTER-001.

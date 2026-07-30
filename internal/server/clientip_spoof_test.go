@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/aegis/svalinn/internal/config"
-	"github.com/aegis/svalinn/internal/logger"
-	"github.com/aegis/svalinn/internal/waf"
+	"github.com/koodoxz/tameng/internal/config"
+	"github.com/koodoxz/tameng/internal/logger"
+	"github.com/koodoxz/tameng/internal/waf"
 )
 
 // REQ SVALINN-CLIENTIP-SPOOF-001

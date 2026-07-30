@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aegis/svalinn/internal/literalextract"
+	"github.com/koodoxz/tameng/internal/literalextract"
 )
 
 /*

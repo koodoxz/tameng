@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/aegis/svalinn/internal/literalextract"
+	"github.com/koodoxz/tameng/internal/literalextract"
 )
 
 // EvasionConfig configures evasion detector thresholds.

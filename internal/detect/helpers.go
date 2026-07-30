@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/aegis/svalinn/internal/scanbudget"
+	"github.com/koodoxz/tameng/internal/scanbudget"
 )
 
 // checkPatternsBudget bounds the wall-clock time a single checkPatterns

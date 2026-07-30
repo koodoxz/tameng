@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/aegis/svalinn/internal/literalextract"
+	"github.com/koodoxz/tameng/internal/literalextract"
 )
 
 // ADAttackConfig configures AD attack detector thresholds.

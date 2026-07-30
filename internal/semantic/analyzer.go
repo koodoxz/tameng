@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aegis/svalinn/internal/scanbudget"
+	"github.com/koodoxz/tameng/internal/scanbudget"
 )
 
 // AnalyzerConfig configures semantic analysis.
