@@ -74,16 +74,6 @@ Dibandingkan dengan WAF open-source lainnya seperti **Coraza** (library WAF murn
 - **Tracking Aktor:** Melacak aktor dalam dua tahap (lightweight counters → full profiles) dengan eviction LRU aman memori, bahkan di bawah beban korban DDoS
 - **Transparansi Pengujian Adversarial:** Historik pengujian mendalam dengan alat pembuat serangan khusus (dibuat oleh penulis yang sama). Kami mempublikasikan eksperimen yang gagal juga — kebanyakan security tools tidak pernah mengumumkan ketika sebuah pendekatan tidak membantu.
 
-| | Tameng | Coraza (library WAF) |
-|---|---|---|
-| Deployment | 1 biner, 1 config | Library, perlu diintegrasikan ke proxy/app |
-| ML threat scoring | Native Go (LightGBM), opsional | Tidak ada |
-| Actor/IP reputation tracking | Bawaan, dua-tahap | Tidak ada (stateless per-request) |
-| DDoS escalation | Bawaan, 3-fase | Tidak ada |
-| Honeypot/deception | Bawaan, 100+ trap | Tidak ada |
-| Ruleset | Signature custom, 200+ pattern | OWASP CoreRuleSet (kompatibel ModSecurity) |
-| Dependency runtime | Tidak ada (single binary) | Tergantung integrasi |
-
 ### Adversarial Red-Teaming (Ratatoskr) ⚡
 
 Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan/payload generator khusus (dibangun oleh penulis yang sama, belum dirilis publik) yang dirancang untuk menguji batas fungsionalitas WAF di bawah beban kerja ekstrem (*high-load*) dan skenario evasion nyata, bukan sekadar unit test sintetis.
@@ -336,16 +326,6 @@ Compared to other open-source WAFs like **Coraza** (a pure WAF library, ModSecur
 - **Native ML:** LightGBM model inference runs natively in Go (via the `leaves` library) — no Python sidecar process required at runtime
 - **Actor Tracking:** Tracks threat actors in two stages (lightweight counters → full behavioral profiles) with memory-safe LRU eviction, even under DDoS victim load
 - **Adversarial Testing Transparency:** Deep red-team history with a purpose-built companion attack tool. We publish failed optimization attempts too — most security tools never announce when an approach didn't help.
-
-| | Tameng | Coraza (WAF library) |
-|---|---|---|
-| Deployment | 1 binary, 1 config file | Library, needs integration into a proxy/app |
-| ML threat scoring | Native Go (LightGBM), optional | None |
-| Actor/IP reputation tracking | Built-in, two-stage | None (stateless per-request) |
-| DDoS escalation | Built-in, 3-phase | None |
-| Honeypot/deception | Built-in, 100+ traps | None |
-| Ruleset | Custom signatures, 200+ patterns | OWASP CoreRuleSet (ModSecurity-compatible) |
-| Runtime dependencies | None (single binary) | Depends on integration |
 
 ### Adversarial Red-Teaming (Ratatoskr) ⚡
 
