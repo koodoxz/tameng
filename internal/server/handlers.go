@@ -1674,6 +1674,34 @@ func (s *Server) handleObservatoryAPI(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusOK, data)
 }
 
+// handleCatchAll is the router's catch-all for every path SVALINN does not
+// itself serve (REQ SVALINN-PROXY-BACKEND-001). It runs last in route
+// matching but AFTER the full middleware chain (s.router.Use registers on
+// the whole router, this route included), so WAF/DDoS/actor-tracking/etc.
+// have already had a chance to block the request before it ever reaches
+// here -- forwarding to a tenant's backend does not bypass any of them.
+//
+// isEcosystemEndpoint's 4 paths are the exception: wafMiddleware,
+// rateLimitMiddleware, and the other detector middlewares all skip their own
+// checks for those exact paths (they're meant to be reached only via the
+// dedicated, IP-allowlisted ecosystem dispatch in Server.ServeHTTP). If a
+// request to one of those paths ever falls through to the router itself --
+// e.g. a method or listener the ecosystem dispatch doesn't intercept -- it
+// must NOT be forwarded to the tenant backend with those checks skipped.
+// Refusing to proxy them here restores the exact pre-REQ 404 behavior for
+// that fallthrough case, matching Critical Security Invariant #1.
+//
+// With no backend configured (the default, and every pre-REQ config),
+// behavior is identical to before this REQ: handleNotFound's SVALINN rune
+// response.
+func (s *Server) handleCatchAll(w http.ResponseWriter, r *http.Request) {
+	if s.backendProxy != nil && !isEcosystemEndpoint(r.URL.Path) {
+		s.backendProxy.ServeHTTP(w, r)
+		return
+	}
+	s.handleNotFound(w, r)
+}
+
 // handleNotFound logs and handles 404s with SVALINN rune response
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	clientIP := s.getClientIP(r)

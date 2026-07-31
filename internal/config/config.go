@@ -56,6 +56,10 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `yaml:"read_timeout"`
 	WriteTimeout time.Duration `yaml:"write_timeout"`
 	IdleTimeout  time.Duration `yaml:"idle_timeout"`
+	// BackendURL is the tenant application SVALINN protects (REQ
+	// SVALINN-PROXY-BACKEND-001). Empty (default) disables forwarding and
+	// preserves standalone behavior.
+	BackendURL string `yaml:"backend_url"`
 }
 
 // SecurityConfig holds security-related settings

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"github.com/koodoxz/tameng/internal/payload"
 	"github.com/koodoxz/tameng/internal/preattack"
 	"github.com/koodoxz/tameng/internal/protocol"
+	"github.com/koodoxz/tameng/internal/proxy"
 	"github.com/koodoxz/tameng/internal/response"
 	"github.com/koodoxz/tameng/internal/security"
 	"github.com/koodoxz/tameng/internal/semantic"
@@ -50,6 +52,12 @@ type Server struct {
 	httpServer        *http.Server
 	ecosystemHandlers map[string]http.HandlerFunc // Direct handlers for ecosystem endpoints
 	tlsServer         *http.Server
+
+	// backendProxy forwards requests SVALINN does not itself serve to the
+	// tenant's protected backend (REQ SVALINN-PROXY-BACKEND-001). Nil when
+	// server.backend_url is unset -- the catch-all route then falls back to
+	// handleNotFound, matching pre-REQ behavior exactly.
+	backendProxy *httputil.ReverseProxy
 
 	// WAF Engine
 	waf   *waf.Engine
@@ -130,6 +138,18 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		if key == "" {
 			return nil, fmt.Errorf("security.api_keys must not contain empty values (an empty entry would allow unauthenticated access to API-key-protected endpoints)")
 		}
+	}
+
+	// REQ SVALINN-PROXY-BACKEND-001: fail closed on a malformed backend_url at
+	// startup rather than silently disabling forwarding or panicking on the
+	// first proxied request.
+	var backendProxy *httputil.ReverseProxy
+	if cfg.Server.BackendURL != "" {
+		bp, err := proxy.NewBackendProxy(cfg.Server.BackendURL, log.WithModule("proxy"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to configure backend proxy: %w", err)
+		}
+		backendProxy = bp
 	}
 
 	// Initialize WAF engine with default signatures
@@ -395,6 +415,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		stats:                 &Stats{StartTime: time.Now()},
 		shutdown:              make(chan struct{}),
 		ecosystemHandlers:     make(map[string]http.HandlerFunc),
+		backendProxy:          backendProxy,
 		waf:                   wafEngine,
 		mlWAF:                 mlWAFEngine,
 		geoip:                 geoipReader,
@@ -829,8 +850,10 @@ func (s *Server) setupRoutes() {
 		s.handleHoneypot(w, r, "api")
 	})
 
-	// Catch-all (log unknown paths)
-	s.router.PathPrefix("/").HandlerFunc(s.handleNotFound)
+	// Catch-all: forwards to the backend proxy when server.backend_url is
+	// configured (REQ SVALINN-PROXY-BACKEND-001), otherwise unchanged
+	// pre-REQ behavior (log unknown paths, 404 shield response).
+	s.router.PathPrefix("/").HandlerFunc(s.handleCatchAll)
 }
 
 // Start starts the HTTP and HTTPS servers

@@ -9,6 +9,42 @@ server:
   read_timeout: 30s
   write_timeout: 30s
   idle_timeout: 120s
+  # backend_url: the tenant application SVALINN protects, e.g.
+  # "http://127.0.0.1:8080". When set, any request that does not match one of
+  # SVALINN's own routes (health, metrics, TAXII, API, etc.) is forwarded here
+  # AFTER passing through the full WAF/DDoS/actor-tracking/deception
+  # middleware chain. Leave empty (default) to run SVALINN standalone, serving
+  # only its own routes.
+  #
+  # Known limitations of this initial forwarding implementation, from
+  # independent security review (REQ SVALINN-PROXY-BACKEND-001):
+  #   - WebSocket upgrades to the backend always fail (502): the logging/
+  #     egress response wrappers don't implement http.Hijacker. Don't put a
+  #     WebSocket backend behind backend_url yet.
+  #   - SSE/chunked backend responses are buffered, not streamed, for the
+  #     same reason.
+  #   - Request bodies over 8 KiB are rejected (413) and are fully buffered
+  #     in memory below that -- no streaming uploads. Large JSON payloads or
+  #     file uploads to the tenant app will fail.
+  #   - ~18 SVALINN-owned path prefixes (e.g. /admin, /api/users, /debug,
+  #     /backup, /health, /metrics) always shadow the backend and never
+  #     reach it, even if the tenant app uses the same paths.
+  #   - X-Forwarded-Proto sent to the backend reflects TLS on SVALINN's own
+  #     listener only; if TLS is terminated upstream (e.g. nginx) and
+  #     forwarded to SVALINN as plaintext, the backend always sees "http"
+  #     even for HTTPS callers -- can break Secure-cookie or HTTPS-redirect
+  #     logic on the backend.
+  #   - Do not point backend_url at SVALINN's own listener (self-referencing
+  #     loop) or at an unauthenticated address you don't control.
+  #   - waf.whitelisted_paths / waf.whitelisted_ips skip the WAF (other
+  #     detectors and rate limiting still run). A whitelisted path that isn't
+  #     one of SVALINN's own routes now proxies to the backend with the WAF
+  #     off, where it was previously a no-op 404 -- keep this list tight.
+  #   - The deception/honeypot path rewrite can, in rare cases, turn into a
+  #     real backend request at the rewritten path instead of a honeypot
+  #     response (the rewrite is SVALINN-chosen, not attacker-controlled, so
+  #     this is a deception-fidelity gap, not a bypass).
+  backend_url: ""
 
 security:
   god_mode_key: "${SVALINN_GOD_KEY}"
