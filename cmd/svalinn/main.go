@@ -40,7 +40,7 @@ func main() {
 	fmt.Print(banner)
 
 	// Initialize logger
-	log := logger.New("SVALINN")
+	log := logger.New("TAMENG")
 	log.Info("Starting Tameng Security Shield...")
 
 	// Load configuration

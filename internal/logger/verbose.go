@@ -93,7 +93,7 @@ type StartupStats struct {
 func PrintStartupBanner(log *zerolog.Logger, stats StartupStats) {
 	v := NewVerboseLogger(log)
 
-	v.Header("SVALINN Security Shield - Initializing")
+	v.Header("TAMENG Security Shield - Initializing")
 
 	// Configuration
 	v.Component("Config", "Loading configuration...")
@@ -170,6 +170,6 @@ func PrintStartupBanner(log *zerolog.Logger, stats StartupStats) {
 
 	// Final Summary
 	loadTime := time.Since(stats.StartTime)
-	v.Header(fmt.Sprintf("✅ SVALINN Shield ACTIVE (loaded in %v)", loadTime.Round(time.Millisecond)))
+	v.Header(fmt.Sprintf("✅ TAMENG Shield ACTIVE (loaded in %v)", loadTime.Round(time.Millisecond)))
 	v.log.Info().Msg("🛡️  All systems operational - Infrastructure protected")
 }
