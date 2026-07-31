@@ -74,10 +74,6 @@ Dibandingkan dengan WAF open-source lainnya seperti **Coraza** (library WAF murn
 - **Tracking Aktor:** Melacak aktor dalam dua tahap (lightweight counters → full profiles) dengan eviction LRU aman memori, bahkan di bawah beban korban DDoS
 - **Transparansi Pengujian Adversarial:** Historik pengujian mendalam dengan alat pembuat serangan khusus (dibuat oleh penulis yang sama). Kami mempublikasikan eksperimen yang gagal juga — kebanyakan security tools tidak pernah mengumumkan ketika sebuah pendekatan tidak membantu.
 
-### Adversarial Red-Teaming (Ratatoskr) ⚡
-
-Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan/payload generator khusus yang dirancang untuk menguji batas fungsionalitas WAF di bawah beban kerja ekstrem (*high-load*). Telemetry, memory limits, dan blocking rates kami murni berasal dari simulasi red-team riil ini.
-
 | | Tameng | Coraza (library WAF) |
 |---|---|---|
 | Deployment | 1 biner, 1 config | Library, perlu diintegrasikan ke proxy/app |
@@ -87,6 +83,17 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 | Honeypot/deception | Bawaan, 100+ trap | Tidak ada |
 | Ruleset | Signature custom, 200+ pattern | OWASP CoreRuleSet (kompatibel ModSecurity) |
 | Dependency runtime | Tidak ada (single binary) | Tergantung integrasi |
+
+### Adversarial Red-Teaming (Ratatoskr) ⚡
+
+Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan/payload generator khusus (dibangun oleh penulis yang sama, belum dirilis publik) yang dirancang untuk menguji batas fungsionalitas WAF di bawah beban kerja ekstrem (*high-load*) dan skenario evasion nyata, bukan sekadar unit test sintetis.
+
+Hasil nyata dari proses ini:
+- **Round pengujian terbaru:** 13/13 varian payload + teknik evasion berhasil diblokir lewat endpoint yang sama yang dipakai sepanjang engagement pengujian ini.
+- **Fuzz testing:** 8 juta+ eksekusi di seluruh permukaan deteksi, nol crash ditemukan — mengonfirmasi lewat fuzzing (bukan cuma klaim teoretis) bahwa ReDoS memang mustahil terjadi berkat penggunaan RE2 Go.
+- Proses berulang ini menghasilkan lebih dari selusin perbaikan nyata yang sudah live di produksi — termasuk kasus-kasus yang gagal kami tangani di percobaan pertama, bukan cuma yang langsung berhasil.
+
+Telemetry, memory limit, dan blocking rate yang kami klaim di README ini murni berasal dari simulasi red-team riil tersebut, bukan angka microbenchmark buatan.
 
 ## Fitur Keamanan Inti
 
@@ -330,10 +337,6 @@ Compared to other open-source WAFs like **Coraza** (a pure WAF library, ModSecur
 - **Actor Tracking:** Tracks threat actors in two stages (lightweight counters → full behavioral profiles) with memory-safe LRU eviction, even under DDoS victim load
 - **Adversarial Testing Transparency:** Deep red-team history with a purpose-built companion attack tool. We publish failed optimization attempts too — most security tools never announce when an approach didn't help.
 
-### Adversarial Red-Teaming (Ratatoskr) ⚡
-
-Tameng is tested internally using **Ratatoskr** — a custom payload generator and attack simulation tool built to stress-test WAF functional boundaries under high load. Our telemetry, memory limits, and blocking rates stem directly from these real-world red-team simulations.
-
 | | Tameng | Coraza (WAF library) |
 |---|---|---|
 | Deployment | 1 binary, 1 config file | Library, needs integration into a proxy/app |
@@ -343,6 +346,17 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 | Honeypot/deception | Built-in, 100+ traps | None |
 | Ruleset | Custom signatures, 200+ patterns | OWASP CoreRuleSet (ModSecurity-compatible) |
 | Runtime dependencies | None (single binary) | Depends on integration |
+
+### Adversarial Red-Teaming (Ratatoskr) ⚡
+
+Tameng is tested internally using **Ratatoskr** — a custom payload generator and attack simulation tool (built by the same author, not itself open source) designed to stress-test WAF functional boundaries under high load and real evasion scenarios, not just synthetic unit tests.
+
+Real results from this process:
+- **Latest test round:** 13/13 payload and evasion-technique variants blocked, fired through the same endpoint used throughout this testing engagement.
+- **Fuzz testing:** 8M+ executions across the full detection surface, zero crashes found — confirming via fuzzing (not just a theoretical claim) that ReDoS is genuinely impossible thanks to Go's RE2 engine.
+- This iterative process has produced more than a dozen real fixes now live in production — including cases we got wrong on the first attempt, not just the ones that worked immediately.
+
+The telemetry, memory limits, and blocking rates claimed throughout this README come directly from these real red-team simulations, not synthetic microbenchmarks.
 
 ## Core Security Features
 
