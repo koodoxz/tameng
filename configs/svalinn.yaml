@@ -14,8 +14,8 @@ security:
   god_mode_key: "${SVALINN_GOD_KEY}"
   api_keys:
     - "${SVALINN_API_KEY}"
-  mitnick_user: "${SVALINN_MITNICK_USER}"
-  mitnick_pass: "${SVALINN_MITNICK_PASS}"
+  reserse_user: "${SVALINN_RESERSE_USER}"
+  reserse_pass: "${SVALINN_RESERSE_PASS}"
   trusted_proxies:
     - "127.0.0.1"
     - "10.0.0.0/8"
@@ -59,7 +59,7 @@ actor:
   enabled: true
   max_actors: 100000
   eviction_interval: 1m
-  mitnick_enabled: true
+  reserse_enabled: true
   gray_zone_size: 10000
   promotion_threshold: 5
 

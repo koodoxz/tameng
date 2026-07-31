@@ -44,7 +44,7 @@ const (
 type requestLogContext struct {
 	Fingerprint      string
 	PayloadSignature map[string]string
-	MitnickProfileID string
+	ReserseProfileID string
 	WAFSignatures    []string
 	WAFReason        string
 	WAFSeverity      string
@@ -961,7 +961,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 			"bytes", wrapped.bytes,
 			"fingerprint", logCtx.Fingerprint,
 			"payload_signature", logCtx.PayloadSignature,
-			"mitnick_profile", logCtx.MitnickProfileID,
+			"reserse_profile", logCtx.ReserseProfileID,
 			"waf_signatures", logCtx.WAFSignatures,
 			"waf_reason", logCtx.WAFReason,
 			"waf_severity", logCtx.WAFSeverity,
@@ -1088,15 +1088,15 @@ func (s *Server) apiKeyMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// mitnickAuthMiddleware implements Basic Auth for Mitnick endpoints
-func (s *Server) mitnickAuthMiddleware(next http.Handler) http.Handler {
-	expectedUser := s.cfg.Security.MitnickUser
-	expectedPass := s.cfg.Security.MitnickPass
+// reserseAuthMiddleware implements Basic Auth for Reserse endpoints
+func (s *Server) reserseAuthMiddleware(next http.Handler) http.Handler {
+	expectedUser := s.cfg.Security.ReserseUser
+	expectedPass := s.cfg.Security.ResersePass
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="Mitnick Zone"`)
+			w.Header().Set("WWW-Authenticate", `Basic realm="Reserse Zone"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -1118,7 +1118,7 @@ func (s *Server) mitnickAuthMiddleware(next http.Handler) http.Handler {
 		userMatch := len(credentials) == 2 && subtle.ConstantTimeCompare([]byte(credentials[0]), []byte(expectedUser)) == 1
 		passMatch := len(credentials) == 2 && subtle.ConstantTimeCompare([]byte(credentials[1]), []byte(expectedPass)) == 1
 		if !userMatch || !passMatch {
-			s.log.Warn("Failed Mitnick auth", "ip", s.getClientIP(r))
+			s.log.Warn("Failed Reserse auth", "ip", s.getClientIP(r))
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -1255,7 +1255,7 @@ func (s *Server) actorTrackingMiddleware(next http.Handler) http.Handler {
 			}
 		}
 
-		if s.mitnickTracker != nil && s.cfg.Actor.MitnickEnabled {
+		if s.reserseTracker != nil && s.cfg.Actor.ReserseEnabled {
 			fpHash, _ := r.Context().Value(fingerprintKey).(string)
 
 			// Build enriched event description with User-Agent
@@ -1280,14 +1280,14 @@ func (s *Server) actorTrackingMiddleware(next http.Handler) http.Handler {
 				Score:       0,
 			}
 
-			if profile := s.mitnickTracker.Track(ip, fpHash, event); profile != nil {
+			if profile := s.reserseTracker.Track(ip, fpHash, event); profile != nil {
 				if logCtx := getLogContext(r); logCtx != nil {
-					logCtx.MitnickProfileID = profile.ID
+					logCtx.ReserseProfileID = profile.ID
 				}
 
 				// Track post-block persistence
 				if profile.BlocksTriggered > 0 {
-					postBlockCount := s.mitnickTracker.RecordPostBlockRequest(ip)
+					postBlockCount := s.reserseTracker.RecordPostBlockRequest(ip)
 					if postBlockCount > 50 {
 						s.log.Warn("POST-BLOCK PERSISTENCE DETECTED",
 							"ip", ip,

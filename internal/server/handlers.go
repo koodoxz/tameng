@@ -1064,27 +1064,27 @@ func (s *Server) handleUnblockIP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleMitnickActors returns detailed actor information
-func (s *Server) handleMitnickActors(w http.ResponseWriter, r *http.Request) {
-	if s.mitnickTracker == nil {
+// handleReserseActors returns detailed actor information
+func (s *Server) handleReserseActors(w http.ResponseWriter, r *http.Request) {
+	if s.reserseTracker == nil {
 		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
-			"error": "Mitnick tracker not available",
+			"error": "Reserse tracker not available",
 		})
 		return
 	}
 
-	profiles := s.mitnickTracker.GetAllProfiles()
+	profiles := s.reserseTracker.GetAllProfiles()
 	highThreatOnly := r.URL.Query().Get("high_threat") == "true"
 
 	if highThreatOnly {
-		profiles = s.mitnickTracker.GetHighThreatProfiles()
+		profiles = s.reserseTracker.GetHighThreatProfiles()
 	}
 
 	// Convert to JSON-safe format
 	response := map[string]interface{}{
 		"total":    len(profiles),
 		"profiles": make([]map[string]interface{}, 0, len(profiles)),
-		"stats":    s.mitnickTracker.Stats(),
+		"stats":    s.reserseTracker.Stats(),
 	}
 
 	for _, profile := range profiles {
@@ -1108,11 +1108,11 @@ func (s *Server) handleMitnickActors(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusOK, response)
 }
 
-// handleMitnickTimeline returns timeline events for a Mitnick profile by ID.
-func (s *Server) handleMitnickTimeline(w http.ResponseWriter, r *http.Request) {
-	if s.mitnickTracker == nil {
+// handleReserseTimeline returns timeline events for a Reserse profile by ID.
+func (s *Server) handleReserseTimeline(w http.ResponseWriter, r *http.Request) {
+	if s.reserseTracker == nil {
 		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
-			"error": "Mitnick tracker not available",
+			"error": "Reserse tracker not available",
 		})
 		return
 	}
@@ -1133,7 +1133,7 @@ func (s *Server) handleMitnickTimeline(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	profile := s.mitnickTracker.GetProfile(profileID)
+	profile := s.reserseTracker.GetProfile(profileID)
 	if profile == nil {
 		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
 			"error": "profile not found",
@@ -1141,7 +1141,7 @@ func (s *Server) handleMitnickTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	timeline := s.mitnickTracker.GetProfileTimeline(profileID, limit)
+	timeline := s.reserseTracker.GetProfileTimeline(profileID, limit)
 	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"status":      "ok",
 		"profile":     profileID,
@@ -1153,11 +1153,11 @@ func (s *Server) handleMitnickTimeline(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleMitnickTimelineByIP returns timeline events for a Mitnick profile by IP.
-func (s *Server) handleMitnickTimelineByIP(w http.ResponseWriter, r *http.Request) {
-	if s.mitnickTracker == nil {
+// handleReserseTimelineByIP returns timeline events for a Reserse profile by IP.
+func (s *Server) handleReserseTimelineByIP(w http.ResponseWriter, r *http.Request) {
+	if s.reserseTracker == nil {
 		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
-			"error": "Mitnick tracker not available",
+			"error": "Reserse tracker not available",
 		})
 		return
 	}
@@ -1178,7 +1178,7 @@ func (s *Server) handleMitnickTimelineByIP(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	profile := s.mitnickTracker.GetProfileByIP(ip)
+	profile := s.reserseTracker.GetProfileByIP(ip)
 	if profile == nil {
 		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
 			"error": "profile not found",
@@ -1186,7 +1186,7 @@ func (s *Server) handleMitnickTimelineByIP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	timeline := s.mitnickTracker.GetProfileTimeline(profile.ID, limit)
+	timeline := s.reserseTracker.GetProfileTimeline(profile.ID, limit)
 	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"status":      "ok",
 		"profile":     profile.ID,
@@ -1198,16 +1198,16 @@ func (s *Server) handleMitnickTimelineByIP(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// handleMitnickGraph returns actor relationship graph
-func (s *Server) handleMitnickGraph(w http.ResponseWriter, r *http.Request) {
-	if s.mitnickTracker == nil {
+// handleReserseGraph returns actor relationship graph
+func (s *Server) handleReserseGraph(w http.ResponseWriter, r *http.Request) {
+	if s.reserseTracker == nil {
 		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
-			"error": "Mitnick tracker not available",
+			"error": "Reserse tracker not available",
 		})
 		return
 	}
 
-	profiles := s.mitnickTracker.GetAllProfiles()
+	profiles := s.reserseTracker.GetAllProfiles()
 	maxNodes := 200
 	if q := r.URL.Query().Get("limit"); q != "" {
 		var parsed int
@@ -1240,7 +1240,7 @@ func (s *Server) handleMitnickGraph(w http.ResponseWriter, r *http.Request) {
 	// Build correlation edges among included nodes
 	added := make(map[string]struct{})
 	for _, p := range profiles {
-		related := s.mitnickTracker.Correlate(p)
+		related := s.reserseTracker.Correlate(p)
 		for _, other := range related {
 			if other == nil {
 				continue

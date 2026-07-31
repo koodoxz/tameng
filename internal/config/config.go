@@ -65,8 +65,8 @@ type SecurityConfig struct {
 	TrustedProxies []string `yaml:"trusted_proxies"`
 	RateLimitRPS   float64  `yaml:"rate_limit_rps"`
 	RateLimitBurst int      `yaml:"rate_limit_burst"`
-	MitnickUser    string   `yaml:"mitnick_user"`
-	MitnickPass    string   `yaml:"mitnick_pass"`
+	ReserseUser    string   `yaml:"reserse_user"`
+	ResersePass    string   `yaml:"reserse_pass"`
 }
 
 // WAFConfig holds Web Application Firewall settings
@@ -108,7 +108,7 @@ type ActorConfig struct {
 	Enabled            bool          `yaml:"enabled"`
 	MaxActors          int           `yaml:"max_actors"`
 	EvictionInterval   time.Duration `yaml:"eviction_interval"`
-	MitnickEnabled     bool          `yaml:"mitnick_enabled"`
+	ReserseEnabled     bool          `yaml:"reserse_enabled"`
 	GrayZoneSize       int           `yaml:"gray_zone_size"`
 	PromotionThreshold int           `yaml:"promotion_threshold"`
 }

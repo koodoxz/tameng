@@ -10,8 +10,8 @@ import (
 func TestNew_FailsClosedWhenGodModeKeyEmpty(t *testing.T) {
 	cfg := &config.Config{
 		Security: config.SecurityConfig{
-			MitnickUser: "user",
-			MitnickPass: "pass",
+			ReserseUser: "user",
+			ResersePass: "pass",
 			GodModeKey:  "",
 			APIKeys:     []string{"validkey"},
 		},
@@ -28,8 +28,8 @@ func TestNew_FailsClosedWhenAPIKeysContainsEmptyString(t *testing.T) {
 	// request sending no credentials at all ("" == "").
 	cfg := &config.Config{
 		Security: config.SecurityConfig{
-			MitnickUser: "user",
-			MitnickPass: "pass",
+			ReserseUser: "user",
+			ResersePass: "pass",
 			GodModeKey:  "validgodkey",
 			APIKeys:     []string{""},
 		},

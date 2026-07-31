@@ -89,7 +89,7 @@ type Server struct {
 	attackAnalyzer        *detect.Analyzer
 	forecastEngine        *ml.ProphetForecaster
 	triangulation         *ml.TriangulationEngine
-	mitnickTracker        *actor.MitnickTracker
+	reserseTracker        *actor.ReserseTracker
 	actorTracker          *actor.Tracker
 	ddosEngine            *ddos.Engine
 	grayZone              *actor.GrayZone
@@ -120,8 +120,8 @@ type Stats struct {
 
 // New creates a new SVALINN server
 func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
-	if cfg.Security.MitnickUser == "" || cfg.Security.MitnickPass == "" {
-		return nil, fmt.Errorf("security.mitnick_user and security.mitnick_pass must be set (empty credentials would allow unauthenticated access to the Mitnick zone)")
+	if cfg.Security.ReserseUser == "" || cfg.Security.ResersePass == "" {
+		return nil, fmt.Errorf("security.reserse_user and security.reserse_pass must be set (empty credentials would allow unauthenticated access to the Reserse zone)")
 	}
 	if cfg.Security.GodModeKey == "" {
 		return nil, fmt.Errorf("security.god_mode_key must be set (an empty value would allow unauthenticated God Mode access)")
@@ -335,13 +335,13 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		triangulationEngine = ml.NewTriangulationEngine(ml.TriangulationConfig{})
 	}
 
-	// Initialize Mitnick Tracker for cross-IP actor correlation
-	mitnickTracker := actor.NewMitnickTracker(0.7) // 70% similarity threshold
-	log.Info("Mitnick tracker initialized", "correlation_threshold", 0.7)
-	if count, err := mitnickTracker.ImportLegacyActorMemory("/root/data/attacker-memory.json"); err != nil {
+	// Initialize Reserse Tracker for cross-IP actor correlation
+	reserseTracker := actor.NewReserseTracker(0.7) // 70% similarity threshold
+	log.Info("Reserse tracker initialized", "correlation_threshold", 0.7)
+	if count, err := reserseTracker.ImportLegacyActorMemory("/root/data/attacker-memory.json"); err != nil {
 		log.Warn("Failed to import legacy attacker memory", "error", err)
 	} else if count > 0 {
-		log.Info("Imported legacy attacker memory into Mitnick", "profiles", count)
+		log.Info("Imported legacy attacker memory into Reserse", "profiles", count)
 	}
 
 	var actorTracker *actor.Tracker
@@ -374,7 +374,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 
 	var activeDefense *orchestrator.Orchestrator
 	if cfg.ActiveDefense.Enabled {
-		activeDefense = orchestrator.NewOrchestrator(mitnickTracker, fingerprinter, orchestrator.Config{
+		activeDefense = orchestrator.NewOrchestrator(reserseTracker, fingerprinter, orchestrator.Config{
 			Enabled:       cfg.ActiveDefense.Enabled,
 			AutoEscalate:  cfg.ActiveDefense.AutoEscalate,
 			TarpitDelay:   cfg.ActiveDefense.TarpitDelay,
@@ -424,7 +424,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		attackAnalyzer:        attackAnalyzer,
 		forecastEngine:        forecastEngine,
 		triangulation:         triangulationEngine,
-		mitnickTracker:        mitnickTracker,
+		reserseTracker:        reserseTracker,
 		actorTracker:          actorTracker,
 		ddosEngine:            ddosEngine,
 		grayZone:              grayZone,
@@ -794,13 +794,13 @@ func (s *Server) setupRoutes() {
 	v9.HandleFunc("/kill-chain/{ip}/timeline", s.handleKillChainTimeline).Methods("GET")
 	v9.HandleFunc("/ja3/clusters", s.handleJA3Clusters).Methods("GET")
 
-	// Mitnick endpoints (Basic Auth)
-	mitnick := s.router.PathPrefix("/mitnick").Subrouter()
-	mitnick.Use(s.mitnickAuthMiddleware)
-	mitnick.HandleFunc("/actors", s.handleMitnickActors).Methods("GET")
-	mitnick.HandleFunc("/actors/{id}/timeline", s.handleMitnickTimeline).Methods("GET")
-	mitnick.HandleFunc("/actors/by-ip/{ip}/timeline", s.handleMitnickTimelineByIP).Methods("GET")
-	mitnick.HandleFunc("/graph", s.handleMitnickGraph).Methods("GET")
+	// Reserse endpoints (Basic Auth)
+	reserse := s.router.PathPrefix("/reserse").Subrouter()
+	reserse.Use(s.reserseAuthMiddleware)
+	reserse.HandleFunc("/actors", s.handleReserseActors).Methods("GET")
+	reserse.HandleFunc("/actors/{id}/timeline", s.handleReserseTimeline).Methods("GET")
+	reserse.HandleFunc("/actors/by-ip/{ip}/timeline", s.handleReserseTimelineByIP).Methods("GET")
+	reserse.HandleFunc("/graph", s.handleReserseGraph).Methods("GET")
 
 	// HONEYPOT TRAPS - Juicy endpoints for attackers
 	// Any access = logged + fake response with taunt

@@ -37,8 +37,8 @@ import (
 func minimalValidTestConfig() *config.Config {
 	return &config.Config{
 		Security: config.SecurityConfig{
-			MitnickUser:    "user",
-			MitnickPass:    "pass",
+			ReserseUser:    "user",
+			ResersePass:    "pass",
 			GodModeKey:     "validgodkey",
 			APIKeys:        []string{"validapikey"},
 			RateLimitRPS:   1000,

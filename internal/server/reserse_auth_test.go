@@ -10,13 +10,13 @@ import (
 	"github.com/koodoxz/tameng/internal/logger"
 )
 
-func newMitnickTestServer(user, pass string) *Server {
+func newReserseTestServer(user, pass string) *Server {
 	return &Server{
 		log: logger.New("test"),
 		cfg: &config.Config{
 			Security: config.SecurityConfig{
-				MitnickUser: user,
-				MitnickPass: pass,
+				ReserseUser: user,
+				ResersePass: pass,
 			},
 		},
 	}
@@ -26,13 +26,13 @@ func basicAuthHeader(user, pass string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(user+":"+pass))
 }
 
-func TestMitnickAuthMiddleware_RejectsMissingHeader(t *testing.T) {
-	s := newMitnickTestServer("configuser", "configpass")
-	handler := s.mitnickAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestReserseAuthMiddleware_RejectsMissingHeader(t *testing.T) {
+	s := newReserseTestServer("configuser", "configpass")
+	handler := s.reserseAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("next handler should not be called")
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/mitnick/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/reserse/status", nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -41,16 +41,16 @@ func TestMitnickAuthMiddleware_RejectsMissingHeader(t *testing.T) {
 	}
 }
 
-func TestMitnickAuthMiddleware_RejectsCredentialsNotMatchingConfig(t *testing.T) {
+func TestReserseAuthMiddleware_RejectsCredentialsNotMatchingConfig(t *testing.T) {
 	// Auth must be driven entirely by config -- any credentials other than
-	// the ones in cfg.Security.Mitnick{User,Pass} must be rejected, proving
+	// the ones in cfg.Security.Reserse{User,Pass} must be rejected, proving
 	// there is no fallback to a hardcoded value anywhere in the path.
-	s := newMitnickTestServer("configuser", "configpass")
-	handler := s.mitnickAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s := newReserseTestServer("configuser", "configpass")
+	handler := s.reserseAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Fatal("next handler should not be called with non-matching credentials")
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/mitnick/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/reserse/status", nil)
 	req.Header.Set("Authorization", basicAuthHeader("wronguser", "wrongpass"))
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -60,15 +60,15 @@ func TestMitnickAuthMiddleware_RejectsCredentialsNotMatchingConfig(t *testing.T)
 	}
 }
 
-func TestMitnickAuthMiddleware_AcceptsConfiguredCredentials(t *testing.T) {
-	s := newMitnickTestServer("configuser", "configpass")
+func TestReserseAuthMiddleware_AcceptsConfiguredCredentials(t *testing.T) {
+	s := newReserseTestServer("configuser", "configpass")
 	called := false
-	handler := s.mitnickAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := s.reserseAuthMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/mitnick/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/reserse/status", nil)
 	req.Header.Set("Authorization", basicAuthHeader("configuser", "configpass"))
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -81,10 +81,10 @@ func TestMitnickAuthMiddleware_AcceptsConfiguredCredentials(t *testing.T) {
 	}
 }
 
-func TestNew_FailsClosedWhenMitnickCredentialsUnset(t *testing.T) {
+func TestNew_FailsClosedWhenReserseCredentialsUnset(t *testing.T) {
 	cfg := &config.Config{}
 	_, err := New(cfg, logger.New("test"))
 	if err == nil {
-		t.Fatal("expected New() to return an error when Mitnick credentials are unset")
+		t.Fatal("expected New() to return an error when Reserse credentials are unset")
 	}
 }

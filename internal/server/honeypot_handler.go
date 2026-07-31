@@ -26,12 +26,12 @@ func (s *Server) honeypotMiddleware() func(http.Handler) http.Handler {
 					r.Method,
 				)
 
-				// Record block in Mitnick tracker
-				if s.mitnickTracker != nil {
-					s.mitnickTracker.RecordBlock(clientIP)
+				// Record block in Reserse tracker
+				if s.reserseTracker != nil {
+					s.reserseTracker.RecordBlock(clientIP)
 
 					// Check for persistent attacker escalation
-					if shouldEscalate, duration, reason := s.mitnickTracker.ShouldEscalateBlock(clientIP); shouldEscalate {
+					if shouldEscalate, duration, reason := s.reserseTracker.ShouldEscalateBlock(clientIP); shouldEscalate {
 						s.log.Error("PERSISTENT ATTACKER ESCALATED",
 							"ip", clientIP,
 							"path", r.URL.Path,
@@ -113,11 +113,11 @@ func (s *Server) honeypotHandler(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	// Record block in Mitnick tracker
-	if s.mitnickTracker != nil {
-		s.mitnickTracker.RecordBlock(clientIP)
+	// Record block in Reserse tracker
+	if s.reserseTracker != nil {
+		s.reserseTracker.RecordBlock(clientIP)
 
-		if shouldEscalate, duration, reason := s.mitnickTracker.ShouldEscalateBlock(clientIP); shouldEscalate {
+		if shouldEscalate, duration, reason := s.reserseTracker.ShouldEscalateBlock(clientIP); shouldEscalate {
 			s.log.Error("PERSISTENT ATTACKER ESCALATED",
 				"ip", clientIP,
 				"path", r.URL.Path,

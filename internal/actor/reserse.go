@@ -1,8 +1,7 @@
 /*
-Package actor - Mitnick-level tracking implementation.
+Package actor - Reserse-level tracking implementation.
 
-Migrated from:
-- mitnick-tracker.js
+Migrated from a legacy Node.js prototype:
 - actor-graph.js
 - attacker-memory.js
 - triangulation-engine.js
@@ -23,8 +22,8 @@ import (
 	"time"
 )
 
-// MitnickProfile represents an advanced attacker profile
-type MitnickProfile struct {
+// ReserseProfile represents an advanced attacker profile
+type ReserseProfile struct {
 	ID            string
 	IPs           []string
 	Fingerprints  []string
@@ -99,9 +98,9 @@ type NavigationPattern struct {
 	DepthProfile map[int]int
 }
 
-// MitnickTracker is the advanced attacker tracking system
-type MitnickTracker struct {
-	profiles     sync.Map // map[string]*MitnickProfile
+// ReserseTracker is the advanced attacker tracking system
+type ReserseTracker struct {
+	profiles     sync.Map // map[string]*ReserseProfile
 	ipToProfile  sync.Map // map[string]string - IP to profile ID
 	fpToProfile  sync.Map // map[string]string - Fingerprint to profile ID
 	ttpToProfile sync.Map // map[string]string - TTP signature to profile ID
@@ -126,20 +125,20 @@ type MitnickTracker struct {
 // generic (common HTTP library) and get reduced correlation weight.
 const genericFPThreshold = 10
 
-// NewMitnickTracker creates a new Mitnick-level tracker
-func NewMitnickTracker(correlationThreshold float64) *MitnickTracker {
+// NewReserseTracker creates a new Reserse-level tracker
+func NewReserseTracker(correlationThreshold float64) *ReserseTracker {
 	if correlationThreshold == 0 {
 		correlationThreshold = 0.7
 	}
 
-	return &MitnickTracker{
+	return &ReserseTracker{
 		correlationThreshold: correlationThreshold,
 		temporalWindow:       5 * time.Minute, // Default 5-minute correlation window
 	}
 }
 
 // trackFingerprintIP records that a fingerprint was seen from a given IP and returns the unique IP count.
-func (t *MitnickTracker) trackFingerprintIP(fingerprint, ip string) int {
+func (t *ReserseTracker) trackFingerprintIP(fingerprint, ip string) int {
 	if fingerprint == "" {
 		return 0
 	}
@@ -159,7 +158,7 @@ func (t *MitnickTracker) trackFingerprintIP(fingerprint, ip string) int {
 // unique IPs share this fingerprint. Unique fingerprints get full weight;
 // generic ones (common HTTP libraries) get near-zero.
 // Formula: min(1.0, 1.0 / log2(uniqueIPs + 1))
-func (t *MitnickTracker) fingerprintWeight(fingerprint string) float64 {
+func (t *ReserseTracker) fingerprintWeight(fingerprint string) float64 {
 	if fingerprint == "" {
 		return 0.0
 	}
@@ -179,7 +178,7 @@ func (t *MitnickTracker) fingerprintWeight(fingerprint string) float64 {
 }
 
 // isGenericFingerprint returns true if the fingerprint is shared by too many IPs
-func (t *MitnickTracker) isGenericFingerprint(fingerprint string) bool {
+func (t *ReserseTracker) isGenericFingerprint(fingerprint string) bool {
 	if fingerprint == "" {
 		return false
 	}
@@ -208,14 +207,14 @@ type CorrelationSignals struct {
 }
 
 // Track tracks an event and links it to a profile using advanced multi-signal correlation
-func (t *MitnickTracker) Track(ip string, fingerprint string, event TimelineEvent) *MitnickProfile {
+func (t *ReserseTracker) Track(ip string, fingerprint string, event TimelineEvent) *ReserseProfile {
 	// Track fingerprint frequency for weight calculation
 	t.trackFingerprintIP(fingerprint, ip)
 
 	// Try exact IP match first (fast path)
 	if profileID, exists := t.ipToProfile.Load(ip); exists {
 		if profileVal, ok := t.profiles.Load(profileID); ok {
-			profile := profileVal.(*MitnickProfile)
+			profile := profileVal.(*ReserseProfile)
 			t.updateProfile(profile, ip, fingerprint, event)
 			return profile
 		}
@@ -227,7 +226,7 @@ func (t *MitnickTracker) Track(ip string, fingerprint string, event TimelineEven
 	if fingerprint != "" && !t.isGenericFingerprint(fingerprint) {
 		if profileID, exists := t.fpToProfile.Load(fingerprint); exists {
 			if profileVal, ok := t.profiles.Load(profileID); ok {
-				profile := profileVal.(*MitnickProfile)
+				profile := profileVal.(*ReserseProfile)
 				t.ipToProfile.Store(ip, profile.ID)
 				t.updateProfile(profile, ip, fingerprint, event)
 				return profile
@@ -250,15 +249,15 @@ func (t *MitnickTracker) Track(ip string, fingerprint string, event TimelineEven
 }
 
 // correlateAdvanced performs multi-signal correlation to link new IPs to existing profiles
-func (t *MitnickTracker) correlateAdvanced(ip string, fingerprint string, event TimelineEvent) *MitnickProfile {
-	var bestMatch *MitnickProfile
+func (t *ReserseTracker) correlateAdvanced(ip string, fingerprint string, event TimelineEvent) *ReserseProfile {
+	var bestMatch *ReserseProfile
 	bestScore := 0.0
 
 	// Get all active profiles (attacked within temporal window)
 	cutoff := time.Now().Add(-t.temporalWindow)
 
 	t.profiles.Range(func(_, value interface{}) bool {
-		profile := value.(*MitnickProfile)
+		profile := value.(*ReserseProfile)
 
 		// Skip if profile is too old (outside temporal window)
 		if profile.LastSeen.Before(cutoff) {
@@ -279,7 +278,7 @@ func (t *MitnickTracker) correlateAdvanced(ip string, fingerprint string, event 
 }
 
 // calculateCorrelationScore computes weighted correlation score using multiple signals
-func (t *MitnickTracker) calculateCorrelationScore(ip string, fingerprint string, event TimelineEvent, profile *MitnickProfile) float64 {
+func (t *ReserseTracker) calculateCorrelationScore(ip string, fingerprint string, event TimelineEvent, profile *ReserseProfile) float64 {
 	profile.lock.RLock()
 	defer profile.lock.RUnlock()
 
@@ -364,11 +363,11 @@ func (t *MitnickTracker) calculateCorrelationScore(ip string, fingerprint string
 	return score
 }
 
-// createProfile creates a new Mitnick profile
-func (t *MitnickTracker) createProfile(ip string, fingerprint string, event TimelineEvent) *MitnickProfile {
+// createProfile creates a new Reserse profile
+func (t *ReserseTracker) createProfile(ip string, fingerprint string, event TimelineEvent) *ReserseProfile {
 	id := generateProfileID()
 
-	profile := &MitnickProfile{
+	profile := &ReserseProfile{
 		ID:          id,
 		IPs:         []string{ip},
 		FirstSeen:   time.Now(),
@@ -395,7 +394,7 @@ func (t *MitnickTracker) createProfile(ip string, fingerprint string, event Time
 }
 
 // updateProfile updates an existing profile
-func (t *MitnickTracker) updateProfile(profile *MitnickProfile, ip string, fingerprint string, event TimelineEvent) {
+func (t *ReserseTracker) updateProfile(profile *ReserseProfile, ip string, fingerprint string, event TimelineEvent) {
 	profile.lock.Lock()
 	defer profile.lock.Unlock()
 
@@ -461,7 +460,7 @@ func (t *MitnickTracker) updateProfile(profile *MitnickProfile, ip string, finge
 }
 
 // calculateThreatLevel calculates the threat level for a profile
-func (t *MitnickTracker) calculateThreatLevel(profile *MitnickProfile) string {
+func (t *ReserseTracker) calculateThreatLevel(profile *ReserseProfile) string {
 	score := 0.0
 
 	// More IPs = more persistent/sophisticated
@@ -496,15 +495,15 @@ func (t *MitnickTracker) calculateThreatLevel(profile *MitnickProfile) string {
 }
 
 // GetProfile returns a profile by ID
-func (t *MitnickTracker) GetProfile(id string) *MitnickProfile {
+func (t *ReserseTracker) GetProfile(id string) *ReserseProfile {
 	if profileVal, exists := t.profiles.Load(id); exists {
-		return profileVal.(*MitnickProfile)
+		return profileVal.(*ReserseProfile)
 	}
 	return nil
 }
 
 // GetProfileTimeline returns a copy of the timeline for a profile, optionally limited to the most recent events.
-func (t *MitnickTracker) GetProfileTimeline(id string, limit int) []TimelineEvent {
+func (t *ReserseTracker) GetProfileTimeline(id string, limit int) []TimelineEvent {
 	profile := t.GetProfile(id)
 	if profile == nil {
 		return nil
@@ -528,21 +527,21 @@ func (t *MitnickTracker) GetProfileTimeline(id string, limit int) []TimelineEven
 }
 
 // GetProfileByIP returns a profile by IP
-func (t *MitnickTracker) GetProfileByIP(ip string) *MitnickProfile {
+func (t *ReserseTracker) GetProfileByIP(ip string) *ReserseProfile {
 	if profileID, exists := t.ipToProfile.Load(ip); exists {
 		if profileVal, ok := t.profiles.Load(profileID); ok {
-			return profileVal.(*MitnickProfile)
+			return profileVal.(*ReserseProfile)
 		}
 	}
 	return nil
 }
 
 // GetAllProfiles returns all profiles
-func (t *MitnickTracker) GetAllProfiles() []*MitnickProfile {
-	var result []*MitnickProfile
+func (t *ReserseTracker) GetAllProfiles() []*ReserseProfile {
+	var result []*ReserseProfile
 
 	t.profiles.Range(func(_, value interface{}) bool {
-		profile := value.(*MitnickProfile)
+		profile := value.(*ReserseProfile)
 		result = append(result, profile)
 		return true
 	})
@@ -551,11 +550,11 @@ func (t *MitnickTracker) GetAllProfiles() []*MitnickProfile {
 }
 
 // GetHighThreatProfiles returns profiles with high/critical threat levels
-func (t *MitnickTracker) GetHighThreatProfiles() []*MitnickProfile {
-	var result []*MitnickProfile
+func (t *ReserseTracker) GetHighThreatProfiles() []*ReserseProfile {
+	var result []*ReserseProfile
 
 	t.profiles.Range(func(_, value interface{}) bool {
-		profile := value.(*MitnickProfile)
+		profile := value.(*ReserseProfile)
 		if profile.ThreatLevel == "high" || profile.ThreatLevel == "critical" {
 			result = append(result, profile)
 		}
@@ -566,11 +565,11 @@ func (t *MitnickTracker) GetHighThreatProfiles() []*MitnickProfile {
 }
 
 // Correlate finds related profiles based on behavioral similarity
-func (t *MitnickTracker) Correlate(profile *MitnickProfile) []*MitnickProfile {
-	var related []*MitnickProfile
+func (t *ReserseTracker) Correlate(profile *ReserseProfile) []*ReserseProfile {
+	var related []*ReserseProfile
 
 	t.profiles.Range(func(_, value interface{}) bool {
-		other := value.(*MitnickProfile)
+		other := value.(*ReserseProfile)
 		if other.ID == profile.ID {
 			return true
 		}
@@ -587,7 +586,7 @@ func (t *MitnickTracker) Correlate(profile *MitnickProfile) []*MitnickProfile {
 }
 
 // calculateSimilarity calculates behavioral similarity between profiles
-func (t *MitnickTracker) calculateSimilarity(a, b *MitnickProfile) float64 {
+func (t *ReserseTracker) calculateSimilarity(a, b *ReserseProfile) float64 {
 	score := 0.0
 	factors := 0.0
 
@@ -645,7 +644,7 @@ func calculateTimingSimilarity(a, b *TimingPattern) float64 {
 }
 
 // RecordBlock records a block event for a profile and tracks persistence
-func (t *MitnickTracker) RecordBlock(ip string) {
+func (t *ReserseTracker) RecordBlock(ip string) {
 	profile := t.GetProfileByIP(ip)
 	if profile == nil {
 		return
@@ -659,7 +658,7 @@ func (t *MitnickTracker) RecordBlock(ip string) {
 }
 
 // RecordPostBlockRequest tracks requests made after being blocked
-func (t *MitnickTracker) RecordPostBlockRequest(ip string) int {
+func (t *ReserseTracker) RecordPostBlockRequest(ip string) int {
 	profile := t.GetProfileByIP(ip)
 	if profile == nil {
 		return 0
@@ -677,7 +676,7 @@ func (t *MitnickTracker) RecordPostBlockRequest(ip string) int {
 }
 
 // ShouldEscalateBlock determines if a blocked IP should get escalated enforcement
-func (t *MitnickTracker) ShouldEscalateBlock(ip string) (bool, time.Duration, string) {
+func (t *ReserseTracker) ShouldEscalateBlock(ip string) (bool, time.Duration, string) {
 	profile := t.GetProfileByIP(ip)
 	if profile == nil {
 		return false, 0, ""
@@ -712,14 +711,14 @@ func (t *MitnickTracker) ShouldEscalateBlock(ip string) (bool, time.Duration, st
 }
 
 // Stats returns tracker statistics
-func (t *MitnickTracker) Stats() map[string]interface{} {
+func (t *ReserseTracker) Stats() map[string]interface{} {
 	highThreat := 0
 	criticalThreat := 0
 	multiIP := 0
 	persistent := 0
 
 	t.profiles.Range(func(_, value interface{}) bool {
-		profile := value.(*MitnickProfile)
+		profile := value.(*ReserseProfile)
 		if profile.ThreatLevel == "high" {
 			highThreat++
 		} else if profile.ThreatLevel == "critical" {
@@ -764,8 +763,8 @@ func (t *MitnickTracker) Stats() map[string]interface{} {
 }
 
 // ImportLegacyActorMemory loads attacker-memory.json from legacy Node data and
-// hydrates Mitnick profiles for correlation with new events.
-func (t *MitnickTracker) ImportLegacyActorMemory(filePath string) (int, error) {
+// hydrates Reserse profiles for correlation with new events.
+func (t *ReserseTracker) ImportLegacyActorMemory(filePath string) (int, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return 0, err
@@ -788,7 +787,7 @@ func (t *MitnickTracker) ImportLegacyActorMemory(filePath string) (int, error) {
 
 		if profileID, exists := t.ipToProfile.Load(ip); exists {
 			if profileVal, ok := t.profiles.Load(profileID); ok {
-				profile := profileVal.(*MitnickProfile)
+				profile := profileVal.(*ReserseProfile)
 				for _, event := range legacy.Timeline {
 					t.updateProfile(profile, ip, "", convertLegacyEvent(ip, legacy.RiskScore, event))
 				}
@@ -804,7 +803,7 @@ func (t *MitnickTracker) ImportLegacyActorMemory(filePath string) (int, error) {
 			lastSeen = firstSeen
 		}
 
-		profile := &MitnickProfile{
+		profile := &ReserseProfile{
 			ID:                legacyProfileID(ip),
 			IPs:               []string{ip},
 			FirstSeen:         firstSeen,
@@ -880,7 +879,7 @@ func legacyThreatLevel(actor legacyActor) string {
 	return "low"
 }
 
-func applyLegacyThreatLevel(profile *MitnickProfile, actor legacyActor) {
+func applyLegacyThreatLevel(profile *ReserseProfile, actor legacyActor) {
 	level := legacyThreatLevel(actor)
 	if level == "critical" || (level == "high" && profile.ThreatLevel != "critical") {
 		profile.ThreatLevel = level

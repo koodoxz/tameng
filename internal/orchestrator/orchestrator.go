@@ -93,7 +93,7 @@ var StageActions = map[KillChainStage]StageAction{
 
 // Orchestrator coordinates active defense responses
 type Orchestrator struct {
-	mitnickTracker        *actor.MitnickTracker
+	reserseTracker        *actor.ReserseTracker
 	fingerprinter         *fingerprint.Engine
 	killChain             *KillChainStateMachine
 	activeCountermeasures map[string]Countermeasure
@@ -150,7 +150,7 @@ type Result struct {
 }
 
 // NewOrchestrator creates a new active defense orchestrator
-func NewOrchestrator(mitnickTracker *actor.MitnickTracker, fingerprinter *fingerprint.Engine, cfg Config) *Orchestrator {
+func NewOrchestrator(reserseTracker *actor.ReserseTracker, fingerprinter *fingerprint.Engine, cfg Config) *Orchestrator {
 	if cfg.BlockDuration == 0 {
 		cfg.BlockDuration = 1 * time.Hour
 	}
@@ -162,7 +162,7 @@ func NewOrchestrator(mitnickTracker *actor.MitnickTracker, fingerprinter *finger
 	}
 
 	return &Orchestrator{
-		mitnickTracker:        mitnickTracker,
+		reserseTracker:        reserseTracker,
 		fingerprinter:         fingerprinter,
 		killChain:             NewKillChainStateMachine(),
 		activeCountermeasures: make(map[string]Countermeasure),
@@ -220,8 +220,8 @@ func (o *Orchestrator) Orchestrate(r *http.Request, clientIP string) *Result {
 			result.ThreatScore += 25
 		}
 
-		// Track in Mitnick
-		if o.mitnickTracker != nil {
+		// Track in Reserse
+		if o.reserseTracker != nil {
 			event := actor.TimelineEvent{
 				Timestamp:   time.Now(),
 				EventType:   "attack",
@@ -234,7 +234,7 @@ func (o *Orchestrator) Orchestrate(r *http.Request, clientIP string) *Result {
 			if fp != nil {
 				fpHash = fp.Hash
 			}
-			o.mitnickTracker.Track(clientIP, fpHash, event)
+			o.reserseTracker.Track(clientIP, fpHash, event)
 		}
 	} else {
 		state := o.killChain.GetOrCreateState(clientIP)
@@ -409,11 +409,11 @@ func (o *Orchestrator) GetKillChainTimeline(ip string) map[string]interface{} {
 	return o.killChain.VisualizeChain(ip)
 }
 
-func (o *Orchestrator) GetActiveActors() []*actor.MitnickProfile {
-	if o.mitnickTracker == nil {
-		return []*actor.MitnickProfile{}
+func (o *Orchestrator) GetActiveActors() []*actor.ReserseProfile {
+	if o.reserseTracker == nil {
+		return []*actor.ReserseProfile{}
 	}
-	return o.mitnickTracker.GetAllProfiles()
+	return o.reserseTracker.GetAllProfiles()
 }
 
 func (o *Orchestrator) clusterJA3(ip, ja3 string) {
