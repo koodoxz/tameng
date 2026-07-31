@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
-  <img src="https://img.shields.io/badge/go-1.21%2B-00ADD8?logo=go&logoColor=white" alt="Go 1.21+">
-  <img src="https://img.shields.io/badge/build-single--binary-informational" alt="Single binary">
-  <img src="https://img.shields.io/badge/made%20in-Indonesia-red?labelColor=white" alt="Made in Indonesia">
-  <a href="https://github.com/koodoxz/tameng/actions"><img src="https://github.com/koodoxz/tameng/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/koodoxz/tameng/actions"><img src="https://img.shields.io/github/actions/workflow/status/koodoxz/tameng/ci.yml?branch=main&style=flat-square&logo=github&label=CI&color=10B981" alt="CI Status"></a>
+  <img src="https://img.shields.io/badge/Go-1.26%2B-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.26+">
+  <img src="https://img.shields.io/badge/License-AGPL--3.0-6366F1?style=flat-square&logo=open-source-initiative&logoColor=white" alt="License: AGPL-3.0">
+  <img src="https://img.shields.io/badge/Build-Single--Binary-3B82F6?style=flat-square&logo=docker&logoColor=white" alt="Single Binary">
+  <img src="https://img.shields.io/badge/Made_in-Indonesia-EF4444?style=flat-square&logoColor=white" alt="Made in Indonesia">
 </p>
 
 <h1 align="center">🛡️ Tameng</h1>
@@ -61,6 +61,7 @@ Tameng menawarkan perlindungan lapisan aplikasi yang komprehensif melalui satu b
 
 **Tameng** adalah kata bahasa Indonesia untuk *perisai* — alat pelindung yang berdiri di depan, menahan serangan sebelum mencapai apa yang dilindunginya. Nama ini dipilih dengan sengaja: proyek ini dibangun oleh seorang developer Indonesia, dan harapannya sederhana — menjadi salah satu perisai nyata untuk infrastruktur digital, mulai dari yang dibangun sendiri, lalu siapa pun yang membutuhkannya. Bukan sekadar nama produk, tapi cita-cita: keamanan siber berkualitas yang lahir dan tumbuh dari Indonesia, dibuka untuk semua orang.
 
+> [!NOTE]
 > **Catatan Penamaan:** Nama internal (module Go, binary, komentar kode) tetap menggunakan "Svalinn" (nama penutup dalam mitologi Nordik yang melindungi matahari dari kehancuran) — kebetulan bertema sama: perisai. Ini adalah keputusan deliberate untuk menghindari refactoring invasif pada sistem produksi aktif. Dokumentasi publik dan branding menggunakan "Tameng".
 
 ## Differensiator Teknis
@@ -101,6 +102,7 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 | **Guard Protokol** | Deteksi request smuggling, GraphQL depth limiting, WebSocket rate limiting |
 | **Analisis Behavioral** | Baseline deviation detection, credential stuffing identification, anomaly correlation |
 
+> [!WARNING]
 > **Batasan yang jujur kami sampaikan:** blokir reputasi-IP saat ini berdurasi tetap dan berlaku untuk seluruh IP sumber yang terdeteksi — pada jaringan dengan IP keluar bersama (NAT/proxy korporat/CDN), ini bisa berdampak ke pengguna lain di IP yang sama. Durasi dapat diatur lewat konfigurasi. Lihat [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan) kalau kamu menemukan dampak ini di deploymentmu.
 
 ## Mulai Cepat
@@ -315,6 +317,7 @@ Tameng delivers comprehensive application-layer protection through a single Go b
 
 **Tameng** is the Indonesian word for *shield* — something that stands in front, absorbing an attack before it reaches whatever it protects. The name was chosen deliberately: this project is built by an Indonesian developer, and the hope behind it is simple — to be one real shield for digital infrastructure, starting with what its author builds, then for whoever else needs it. Not just a product name, but an intent: security tooling that's genuinely good, born and grown in Indonesia, and given away to everyone.
 
+> [!NOTE]
 > **Naming Note:** The internal codebase (Go module path, binary name, code comments) still uses the codename "Svalinn" (the shield in Norse mythology that protects the sun from destruction) — fittingly, the same theme. This is a deliberate choice to avoid invasive refactoring on a live production system. Public documentation and branding use "Tameng."
 
 ## Technical Differentiation
@@ -355,6 +358,7 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 | **Protocol Guards** | Request smuggling detection, GraphQL depth limiting, WebSocket rate limiting |
 | **Behavioral Analysis** | Baseline deviation detection, credential stuffing identification, anomaly correlation |
 
+> [!WARNING]
 > **Honest limitation:** IP-reputation blocking currently uses a fixed duration applied to the entire source IP once triggered — on networks with shared egress IPs (NAT, corporate proxy, CDN), this can affect other users behind the same IP. Duration is configurable. See [Security & Vulnerability Reporting](#security--vulnerability-reporting) if you observe this impact in your deployment.
 
 ## Quick Start (EN)
