@@ -18,6 +18,10 @@
 </p>
 
 <p align="center">
+  <img src="demo/tameng-demo.gif" alt="Tameng starting up and blocking a SQLi+XSS attack live" width="720">
+</p>
+
+<p align="center">
   <a href="#bahasa-indonesia">Bahasa Indonesia</a> ·
   <a href="#english">English</a> ·
   <a href="#quick-start-en">Quick Start</a> ·
