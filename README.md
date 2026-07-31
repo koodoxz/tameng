@@ -153,9 +153,9 @@ Semua konfigurasi melalui **environment variables** dan file `configs/svalinn.ya
 **Kunci Wajib:**
 - `SVALINN_GOD_KEY` — Kunci autentikasi untuk `/api/v9/*` endpoints (admin saja)
 - `SVALINN_API_KEY` — Kunci untuk akses programmatic (threat reporting, actor queries)
+- `SVALINN_RESERSE_USER` / `SVALINN_RESERSE_PASS` — Kredensial modul tracking aktor lanjutan (Reserse). Server menolak untuk start jika kosong (fail-closed by design).
 
 **Kunci Opsional (Ekosistem MECOB):**
-- `SVALINN_RESERSE_USER` / `SVALINN_RESERSE_PASS` — Modul tracking advanced
 - `ODIN_API_KEY` — Kunci integrasi opsional dengan layanan gateway/DNS internal ekosistem MECOB (belum rilis publik)
 
 **Konfigurasi Tuning:**
@@ -179,8 +179,14 @@ Lihat `configs/svalinn.yaml` untuk opsi lanjutan (TLS, SIEM, CVE feeds, dll).
 | `/api/v1/config` | GET | Current config |
 | `/api/v9/reload` | POST | Reload config (God Mode) |
 | `/api/v9/block` | POST | Block IP (God Mode) |
-| `/reserse/actors` | GET | Reserse actor details |
-| `/reserse/graph` | GET | Actor relationship graph |
+| `/reserse/actors` | GET | Reserse actor details (Basic Auth) |
+| `/reserse/actors/{id}/timeline` | GET | Timeline event untuk satu profil aktor (Basic Auth) |
+| `/reserse/actors/by-ip/{ip}/timeline` | GET | Timeline event berdasarkan IP (Basic Auth) |
+| `/reserse/graph` | GET | Actor relationship graph (Basic Auth) |
+| `/taxii` | GET | TAXII discovery document |
+| `/taxii/collections` | GET | Daftar koleksi TAXII |
+| `/taxii/collections/default/objects` | GET | Baca STIX indicator (public) |
+| `/taxii/collections/default/objects` | POST | Submit STIX indicator (perlu `SVALINN_API_KEY`) |
 
 ## Arsitektur
 
@@ -398,9 +404,9 @@ All configuration is via **environment variables** and the `configs/svalinn.yaml
 **Required Keys:**
 - `SVALINN_GOD_KEY` — Authentication key for `/api/v9/*` endpoints (admin only)
 - `SVALINN_API_KEY` — Key for programmatic access (threat reporting, actor queries)
+- `SVALINN_RESERSE_USER` / `SVALINN_RESERSE_PASS` — Credentials for the advanced actor-tracking module (Reserse). The server refuses to start if these are empty (fail-closed by design).
 
 **Optional Keys (MECOB Ecosystem):**
-- `SVALINN_RESERSE_USER` / `SVALINN_RESERSE_PASS` — Advanced actor tracking module
 - `ODIN_API_KEY` — Optional integration key for an internal MECOB ecosystem gateway/DNS service (not yet publicly released)
 
 **Tuning Configuration:**
@@ -424,8 +430,14 @@ See `configs/svalinn.yaml` for advanced options (TLS, SIEM, CVE feeds, etc.).
 | `/api/v1/config` | GET | Current config |
 | `/api/v9/reload` | POST | Reload config (God Mode) |
 | `/api/v9/block` | POST | Block IP (God Mode) |
-| `/reserse/actors` | GET | Reserse actor details |
-| `/reserse/graph` | GET | Actor relationship graph |
+| `/reserse/actors` | GET | Reserse actor details (Basic Auth) |
+| `/reserse/actors/{id}/timeline` | GET | Timeline events for a single actor profile (Basic Auth) |
+| `/reserse/actors/by-ip/{ip}/timeline` | GET | Timeline events by IP (Basic Auth) |
+| `/reserse/graph` | GET | Actor relationship graph (Basic Auth) |
+| `/taxii` | GET | TAXII discovery document |
+| `/taxii/collections` | GET | List TAXII collections |
+| `/taxii/collections/default/objects` | GET | Read STIX indicators (public) |
+| `/taxii/collections/default/objects` | POST | Submit a STIX indicator (requires `SVALINN_API_KEY`) |
 
 ## Architecture
 

@@ -21,14 +21,14 @@ import (
 )
 
 const banner = `
-███████╗██╗   ██╗ █████╗ ██╗     ██╗███╗   ██╗███╗   ██╗
-██╔════╝██║   ██║██╔══██╗██║     ██║████╗  ██║████╗  ██║
-███████╗██║   ██║███████║██║     ██║██╔██╗ ██║██╔██╗ ██║
-╚════██║╚██╗ ╚██╔╝██╔══██║██║     ██║██║╚██╗██║██║╚██╗██║
-███████║ ╚████╔╝ ██║  ██║███████╗██║██║ ╚████║██║ ╚████║
-╚══════╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝
-          Security Shield - AEGIS Ecosystem
-          Version: v9.0 | Build: Production | 100% Parity
+████████╗ █████╗ ███╗   ███╗███████╗███╗   ██╗ ██████╗
+╚══██╔══╝██╔══██╗████╗ ████║██╔════╝████╗  ██║██╔════╝
+   ██║   ███████║██╔████╔██║█████╗  ██╔██╗ ██║██║  ███╗
+   ██║   ██╔══██║██║╚██╔╝██║██╔══╝  ██║╚██╗██║██║   ██║
+   ██║   ██║  ██║██║ ╚═╝ ██║███████╗██║ ╚████║╚██████╔╝
+   ╚═╝   ╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝
+          Security Shield - MECOB Ecosystem
+          Version: v9.0 | Build: Production
 `
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 
 	// Initialize logger
 	log := logger.New("SVALINN")
-	log.Info("Starting SVALINN Security Shield...")
+	log.Info("Starting Tameng Security Shield...")
 
 	// Load configuration
 	cfg, err := config.Load(*configPath)
@@ -63,7 +63,7 @@ func main() {
 		}
 	}()
 
-	log.Info("SVALINN is now protecting your infrastructure")
+	log.Info("Tameng is now protecting your infrastructure")
 	log.Info("Listening on", "http", cfg.Server.HTTPAddr, "https", cfg.Server.HTTPSAddr)
 
 	// Wait for shutdown signal
@@ -81,5 +81,5 @@ func main() {
 		log.Error("Shutdown error", "error", err)
 	}
 
-	log.Info("SVALINN stopped. Stay safe!")
+	log.Info("Tameng stopped. Stay safe!")
 }
