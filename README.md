@@ -162,14 +162,8 @@ Semua konfigurasi melalui **environment variables** dan file `configs/svalinn.ya
 **Kunci Opsional (Ekosistem MECOB):**
 - `ODIN_API_KEY` — Kunci integrasi opsional dengan layanan gateway/DNS internal ekosistem MECOB (belum rilis publik)
 
-**Konfigurasi Tuning:**
-- `WAF_BLOCK_THRESHOLD` — Confidence threshold (0.0-1.0; default 0.8)
-- `DDOS_CHALLENGE_THRESHOLD` / `DDOS_THROTTLE_THRESHOLD` / `DDOS_BLOCK_THRESHOLD` — RPS per fase eskalasi (default 50/100/200)
-- `MAX_ACTORS` — Max aktor di memory (default 100000)
-- `ML_ENABLED` — Toggle ML threat scoring (default true)
-- `DECEPTION_ENABLED` — Toggle honeypots (default true)
-
-Lihat `configs/svalinn.yaml` untuk opsi lanjutan (TLS, SIEM, CVE feeds, dll).
+**Tuning Lanjutan:**
+Threshold WAF/DDoS, batas jumlah aktor di memory, dan toggle fitur (ML scoring, deception, dll) dikonfigurasi langsung lewat `configs/svalinn.yaml` — bukan environment variable. Lihat file tersebut untuk daftar lengkap opsi (WAF, DDoS, ML, deception, SIEM, CVE feeds, TLS, dll).
 
 ## Endpoint API
 
@@ -413,14 +407,8 @@ All configuration is via **environment variables** and the `configs/svalinn.yaml
 **Optional Keys (MECOB Ecosystem):**
 - `ODIN_API_KEY` — Optional integration key for an internal MECOB ecosystem gateway/DNS service (not yet publicly released)
 
-**Tuning Configuration:**
-- `WAF_BLOCK_THRESHOLD` — Confidence threshold (0.0-1.0; default 0.8)
-- `DDOS_CHALLENGE_THRESHOLD` / `DDOS_THROTTLE_THRESHOLD` / `DDOS_BLOCK_THRESHOLD` — RPS per escalation phase (default 50/100/200)
-- `MAX_ACTORS` — Max actors in memory (default 100000)
-- `ML_ENABLED` — Toggle ML threat scoring (default true)
-- `DECEPTION_ENABLED` — Toggle honeypots (default true)
-
-See `configs/svalinn.yaml` for advanced options (TLS, SIEM, CVE feeds, etc.).
+**Advanced Tuning:**
+WAF/DDoS thresholds, actor memory limits, and feature toggles (ML scoring, deception, etc.) are configured directly in `configs/svalinn.yaml` — not via environment variables. See that file for the full list of options (WAF, DDoS, ML, deception, SIEM, CVE feeds, TLS, etc.).
 
 ## API Endpoints
 
