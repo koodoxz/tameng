@@ -180,7 +180,7 @@ Request yang tidak cocok dengan rute Tameng sendiri (health, metrics, TAXII, API
 **Keterbatasan yang jujur kami sampaikan (implementasi awal ini):**
 - Belum mendukung WebSocket upgrade atau streaming SSE/chunked ke backend (akan gagal/di-buffer) — belum cocok untuk backend berbasis WebSocket.
 - Body request di atas 8 KiB ditolak (413) — belum ada streaming upload.
-- Beberapa path yang sudah dipakai Tameng sendiri (`/admin`, `/api/users`, `/debug`, `/backup`, `/health`, `/metrics`, dll — sekitar 18 prefix) selalu menutupi backend Anda, walau aplikasi Anda memakai path yang sama.
+- Beberapa path administratif/decoy bawaan Tameng selalu menutupi backend Anda kalau aplikasi Anda memakai path yang sama — cek `configs/svalinn.yaml` dan source `internal/server/server.go` untuk daftar lengkapnya sebelum menentukan struktur routing aplikasi Anda.
 - `X-Forwarded-Proto` yang diteruskan ke backend hanya benar kalau TLS langsung terminate di Tameng sendiri — kalau TLS di-terminate di nginx/reverse-proxy lain di depan Tameng, backend akan selalu melihat "http".
 - Jangan arahkan `backend_url` ke Tameng sendiri (loop) atau ke alamat yang tidak Anda kendalikan.
 
@@ -444,7 +444,7 @@ Any request that doesn't match one of Tameng's own routes (health, metrics, TAXI
 **Honest limitations of this initial implementation:**
 - No WebSocket upgrade or SSE/chunked streaming support to the backend yet (fails or buffers) — not yet suitable for WebSocket-based backends.
 - Request bodies over 8 KiB are rejected (413) — no streaming uploads yet.
-- Some paths Tameng already owns (`/admin`, `/api/users`, `/debug`, `/backup`, `/health`, `/metrics`, and about 18 prefixes total) always shadow your backend, even if your app uses the same paths.
+- Several built-in administrative/decoy paths Tameng already owns always shadow your backend if your app uses the same paths — check `configs/svalinn.yaml` and the `internal/server/server.go` source for the full list before finalizing your app's routing.
 - The `X-Forwarded-Proto` header forwarded to the backend is only accurate when TLS terminates directly at Tameng — if TLS terminates at an upstream nginx/reverse-proxy in front of Tameng instead, the backend will always see "http".
 - Don't point `backend_url` at Tameng's own listener (creates a loop) or at an address you don't control.
 
