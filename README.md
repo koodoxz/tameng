@@ -134,7 +134,8 @@ sequenceDiagram
         Proxy-->>Client: 7b. 403 Forbidden (Original Response Discarded)
     end
 
-    Note over Proxy,Engine: Response di atas 200KB tidak bisa di-Block secara fisik --<br/>bytes sudah terlanjur streaming ke client saat scan dimulai;<br/>untuk kasus ini hanya Alert (deteksi+catat) yang berlaku, apa pun mode-nya.
+    Note over Proxy,Engine: Response di atas 200KB tidak bisa diblokir karena bytes sudah terlanjur streaming ke client saat scan baru dimulai.
+    Note over Proxy,Engine: Untuk kasus ini, hanya Alert (deteksi dan catat) yang berlaku, apa pun mode yang dikonfigurasi.
 ```
 
 #### Ringkasan Kapabilitas Intersepsi Egress DLP:
@@ -472,7 +473,8 @@ sequenceDiagram
         Proxy-->>Client: 7b. 403 Forbidden (Original Response Discarded)
     end
 
-    Note over Proxy,Engine: Responses larger than 200KB cannot be physically Blocked --<br/>bytes are already streaming to the client by the time scanning starts;<br/>only Alert (detect+log) applies in that case, regardless of configured mode.
+    Note over Proxy,Engine: Responses larger than 200KB cannot be blocked because bytes are already streaming to the client by the time scanning starts.
+    Note over Proxy,Engine: Only Alert (detect and log) applies in that case, regardless of configured mode.
 ```
 
 #### Egress DLP Interception Summary:
