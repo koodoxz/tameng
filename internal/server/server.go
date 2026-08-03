@@ -145,7 +145,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 	// first proxied request.
 	var backendProxy *httputil.ReverseProxy
 	if cfg.Server.BackendURL != "" {
-		bp, err := proxy.NewBackendProxy(cfg.Server.BackendURL, log.WithModule("proxy"))
+		bp, err := proxy.NewBackendProxy(cfg.Server.BackendURL, log.WithModule("proxy"), cfg.AdvancedEgress.Enabled)
 		if err != nil {
 			return nil, fmt.Errorf("failed to configure backend proxy: %w", err)
 		}
@@ -234,6 +234,8 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		TrustedPackageHosts:     cfg.AdvancedEgress.TrustedPackageHosts,
 		MaxEncodedPayloadSize:   cfg.AdvancedEgress.MaxEncodedPayloadSize,
 		EntropyThreshold:        cfg.AdvancedEgress.EntropyThreshold,
+		PIISecretMode:           cfg.AdvancedEgress.PIISecretMode,
+		GenericSecretMode:       cfg.AdvancedEgress.GenericSecretMode,
 	})
 	stixEngine := intel.NewSTIXEngine(intel.STIXConfig{
 		Enabled:             cfg.STIX.Enabled,

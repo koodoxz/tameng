@@ -195,6 +195,20 @@ advanced_egress:
   trusted_package_hosts: ["registry.npmjs.org", "registry.yarnpkg.com", "github.com", "raw.githubusercontent.com", "api.github.com"]
   max_encoded_payload_size: 10000
   entropy_threshold: 4.5
+  # pii_secret_mode: block|alert|log. Indonesian PII patterns (NIK/NPWP/BPJS/
+  # phone/Kartu Keluarga) have a meaningfully higher false-positive surface
+  # than the generic credential patterns above (which always block regardless
+  # of this setting) -- ships as "alert" so operators can observe real-traffic
+  # false-positive rate before promoting to "block".
+  pii_secret_mode: "alert"
+  # generic_secret_mode: block|alert|log. JWT, the unlabeled "AWS Secret"
+  # pattern (any 40-char alnum run -- also matches git SHAs/session IDs/
+  # base64 chunks), and labeled password-field JSON measured a higher
+  # false-positive surface than the rest of the generic-credential patterns
+  # (AWS Key/GitHub/Google/Slack/Stripe/Private Key, narrow well-formed
+  # prefixes, always block regardless of this setting) -- ships as "alert" for
+  # the same reason pii_secret_mode does.
+  generic_secret_mode: "alert"
 
 stix_intel:
   enabled: true
@@ -206,6 +220,10 @@ stix_intel:
 
 business_logic_abuse:
   enabled: true
+  # mode: detect|block. "detect" only logs/counts detected abuse; "block"
+  # actually rejects the request. Validated at config load (case-insensitive)
+  # -- an invalid value fails startup with a clear error instead of silently
+  # behaving as "detect" forever.
   mode: "detect"
   flow_window: 5m
   max_actions: 120

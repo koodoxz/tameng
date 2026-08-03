@@ -6,6 +6,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -56,9 +58,13 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `yaml:"read_timeout"`
 	WriteTimeout time.Duration `yaml:"write_timeout"`
 	IdleTimeout  time.Duration `yaml:"idle_timeout"`
-	// BackendURL is the tenant application SVALINN protects (REQ
-	// SVALINN-PROXY-BACKEND-001). Empty (default) disables forwarding and
-	// preserves standalone behavior.
+	// BackendURL is the protected application SVALINN forwards requests to
+	// (REQ SVALINN-PROXY-BACKEND-001). When set, any request that does not
+	// match one of SVALINN's own routes is reverse-proxied here after passing
+	// through the full middleware chain (WAF, DDoS, actor-tracking, ...).
+	// When empty (the default), SVALINN serves only its own routes and
+	// unmatched paths get the existing 404 shield response -- fully
+	// backward-compatible with configs that predate this field.
 	BackendURL string `yaml:"backend_url"`
 }
 
@@ -205,6 +211,19 @@ type AdvancedEgressConfig struct {
 	TrustedPackageHosts     []string      `yaml:"trusted_package_hosts"`
 	MaxEncodedPayloadSize   int           `yaml:"max_encoded_payload_size"`
 	EntropyThreshold        float64       `yaml:"entropy_threshold"`
+	// PIISecretMode controls whether a PII-category secretPatterns match
+	// (NIK/NPWP/BPJS/phone/KK -- higher false-positive surface than
+	// generic-credential patterns like AWS/GitHub keys, which always block
+	// regardless of this setting) blocks the response or only records/alerts.
+	// block|alert|log, mirroring GeofenceMode. REQ SVALINN-EGRESS-PII-ALERTMODE-001.
+	PIISecretMode string `yaml:"pii_secret_mode"`
+	// GenericSecretMode controls whether a highFP-category secretPatterns
+	// match (JWT / generic "AWS Secret" 40-char run / labeled password-field
+	// JSON -- measured to have a higher false-positive surface than the rest
+	// of the generic-credential patterns, which always block regardless of
+	// this setting) blocks the response or only records/alerts. block|alert|
+	// log, mirrors PIISecretMode. REQ SVALINN-EGRESS-SECRET-MODECONTROL-001.
+	GenericSecretMode string `yaml:"generic_secret_mode"`
 }
 
 // STIXConfig holds STIX/TAXII engine settings
@@ -403,7 +422,92 @@ func Load(path string) (*Config, error) {
 	// Set defaults
 	setDefaults(cfg)
 
+	// REQ SVALINN-EGRESS-MODE-VALIDATE-001: mode-string fields (block|alert|
+	// log) were previously only defaulted when empty -- an operator typo like
+	// "Block" passed setDefaults unchanged (non-empty), then compared
+	// case-sensitively against "block" everywhere it's read, silently
+	// behaving as the safe "alert" default with no indication anything was
+	// wrong. Validating here, at the same boundary that already rejects a
+	// malformed file, surfaces the typo at startup instead.
+	if err := validateModes(cfg); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
 	return cfg, nil
+}
+
+// validEgressModes is the allowed set for every block|alert|log config field.
+var validEgressModes = map[string]bool{"block": true, "alert": true, "log": true}
+
+// validBusinessLogicModes is the allowed set for business_logic_abuse.mode,
+// a differently-shaped (detect|block, not block|alert|log) sibling of the
+// egress modes above -- same silent-misconfiguration bug class (case-
+// sensitive comparison downstream, internal/server/middleware.go's
+// `s.cfg.BusinessLogic.Mode == "block"`), found by the same independent
+// Opus-judge review as a followup, not fixed in that session since it's a
+// different config subsystem with a different value set. REQ
+// SVALINN-EGRESS-MODE-VALIDATE-001 (extended).
+var validBusinessLogicModes = map[string]bool{"detect": true, "block": true}
+
+// modeList renders an allowed-value set as a deterministic, sorted
+// "a|b|c" string for error messages -- map iteration order is randomized in
+// Go, and an error message that changes wording between runs is unpleasant
+// to grep for or paste into a bug report.
+func modeList(allowed map[string]bool) string {
+	values := make([]string, 0, len(allowed))
+	for v := range allowed {
+		values = append(values, v)
+	}
+	sort.Strings(values)
+	return strings.Join(values, "|")
+}
+
+// normalizeMode trims and lowercases a config value in place and validates it
+// against allowed. Called after setDefaults, so a truly empty *mode here
+// means a field this function doesn't yet know about -- treated as
+// valid/unset rather than erroring, since this function's job is validating
+// the modes it's told to check, not enforcing that every such field has
+// already been defaulted. A non-empty value that trims down to empty
+// (whitespace-only, e.g. "  ") is different: setDefaults' own check is also
+// `== ""`, so a whitespace-only YAML value skips defaulting AND would have
+// skipped validation here too, reaching every case-sensitive `== "block"`
+// comparison downstream as neither a real mode nor the safe default --
+// exactly the silent-misconfiguration failure mode this REQ exists to close.
+// Found by an independent Opus-judge review.
+func normalizeMode(field string, allowed map[string]bool, mode *string) error {
+	trimmed := strings.ToLower(strings.TrimSpace(*mode))
+	if *mode != "" && trimmed == "" {
+		return fmt.Errorf("%s: invalid value %q, want one of %s", field, *mode, modeList(allowed))
+	}
+	if trimmed == "" {
+		return nil
+	}
+	if !allowed[trimmed] {
+		return fmt.Errorf("%s: invalid value %q, want one of %s", field, *mode, modeList(allowed))
+	}
+	*mode = trimmed
+	return nil
+}
+
+// validateModes normalizes and validates every enum-shaped mode config
+// field. REQ SVALINN-EGRESS-MODE-VALIDATE-001.
+func validateModes(cfg *Config) error {
+	fields := []struct {
+		name    string
+		allowed map[string]bool
+		mode    *string
+	}{
+		{"advanced_egress.geofence_mode", validEgressModes, &cfg.AdvancedEgress.GeofenceMode},
+		{"advanced_egress.pii_secret_mode", validEgressModes, &cfg.AdvancedEgress.PIISecretMode},
+		{"advanced_egress.generic_secret_mode", validEgressModes, &cfg.AdvancedEgress.GenericSecretMode},
+		{"business_logic_abuse.mode", validBusinessLogicModes, &cfg.BusinessLogic.Mode},
+	}
+	for _, f := range fields {
+		if err := normalizeMode(f.name, f.allowed, f.mode); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // setDefaults applies default values to unset config fields
@@ -600,6 +704,12 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.AdvancedEgress.GeofenceMode == "" {
 		cfg.AdvancedEgress.GeofenceMode = "alert"
+	}
+	if cfg.AdvancedEgress.PIISecretMode == "" {
+		cfg.AdvancedEgress.PIISecretMode = "alert"
+	}
+	if cfg.AdvancedEgress.GenericSecretMode == "" {
+		cfg.AdvancedEgress.GenericSecretMode = "alert"
 	}
 	if cfg.AdvancedEgress.VelocityWindow == 0 {
 		cfg.AdvancedEgress.VelocityWindow = 1 * time.Minute
