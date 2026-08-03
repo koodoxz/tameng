@@ -82,6 +82,9 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 | Metrik Pengujian | Hasil | Metodologi Red-Team |
 | :--- | :---: | :--- |
 | 🎯 **Evasion Payload Blocking** | **100% (13/13)** | Varian serangan terobfuskasi & teknik evasion nyata, lewat endpoint yang sama sepanjang engagement pengujian |
+| 📥 **STIX/TAXII Payload Ingestion** | **100% (13/13)** | SQLi/XSS/traversal/command-injection via endpoint TAXII nyata & teregistrasi (unauthenticated by design) — endpoint yang sama yang sempat kena bug konfigurasi block-threshold, sekarang sudah diperbaiki dan diverifikasi ulang secara live |
+| 🔐 **Integritas Endpoint Ecosystem** | **100% (4/4)** | Laporan HEIMDALL/DNS palsu ditolak oleh IP allowlist; feed baca tanpa autentikasi ditolak oleh middleware auth |
+| 🧪 **Ketahanan Resource / Crash-Safety** | **0 Bypass, 0 Crash** | Probe body-size, nesting JSON, dan parameter limit yang dibatasi terhadap handler nyata; target tetap sehat sebelum dan sesudah |
 | 🛡️ **ReDoS Fuzzing Stability** | **0 Crashes** | 8 juta+ eksekusi fuzzed payload di seluruh permukaan deteksi, pada Go RE2 regex engine |
 | 🔧 **Perbaikan Produksi Nyata** | **16+ Fixes** | Termasuk kasus yang gagal di percobaan pertama, bukan cuma yang langsung berhasil |
 
@@ -369,6 +372,9 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 | Test Metric | Result | Red-Team Methodology |
 | :--- | :---: | :--- |
 | 🎯 **Evasion Payload Blocking** | **100% (13/13)** | Real-world obfuscated attack variants & evasion techniques, fired through the same endpoint used throughout this testing engagement |
+| 📥 **STIX/TAXII Payload Ingestion** | **100% (13/13)** | SQLi/XSS/traversal/command-injection via the real, registered TAXII endpoint (unauthenticated by design) — the same endpoint previously affected by a block-threshold configuration bug, now fixed and reverified live |
+| 🔐 **Ecosystem Endpoint Integrity** | **100% (4/4)** | Forged HEIMDALL/DNS reports rejected by the IP allowlist; unauthenticated read feeds rejected by auth middleware |
+| 🧪 **Resource Exhaustion / Crash-Safety** | **0 Bypasses, 0 Crashes** | Bounded body-size, JSON-nesting, and limit-parameter probes against real handlers; target remained healthy before and after |
 | 🛡️ **ReDoS Fuzzing Stability** | **0 Crashes** | 8M+ fuzzed payload executions across the full detection surface, on Go's RE2 regex engine |
 | 🔧 **Real Production Fixes** | **16+ Fixes** | Including cases we got wrong on the first attempt, not just the ones that worked immediately |
 
