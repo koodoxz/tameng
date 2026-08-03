@@ -107,7 +107,44 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 
 ### Egress Data Loss Prevention (DLP) 🔍
 
-Tameng secara aktif memindai traffic *outbound* (response body) yang keluar dari backend menuju client untuk mencegah kebocoran data sensitif (seperti NIK, NPWP, BPJS, nomor HP Indonesia, JWT, dan API Key cloud) secara real-time.
+Tameng bertindak sebagai *Reverse Proxy* yang secara aktif mengintersepsi traffic *outbound* (response body stream) yang keluar dari backend menuju client untuk mencegah kebocoran data sensitif (seperti NIK, NPWP, BPJS, nomor HP Indonesia, JWT, dan API Key cloud) secara real-time.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as 🌐 Client / Attacker
+    participant Proxy as 🛡️ Tameng WAF (Reverse Proxy)
+    participant Engine as 🔍 Egress DLP Scanner (Stream Engine)
+    participant Backend as 🖥️ Backend App / Database
+
+    Note over Client,Backend: INBOUND TRAFFIC (Request Inspection)
+    Client->>Proxy: 1. HTTP Request (GET /customer/123)
+    Proxy->>Proxy: 2. WAF Signatures + ML Threat Scoring
+    Proxy->>Backend: 3. Forward Clean Request
+
+    Note over Client,Backend: OUTBOUND TRAFFIC (Egress Interception & DLP Inspection)
+    Backend-->>Proxy: 4. HTTP Response Stream (Body containing NIK / Credentials)
+    Proxy->>Engine: 5. Inspect Response Body (Buffered Stream Scanning, up to 200KB scan limit)
+
+    alt Mode: Alert (Default - Non-Disruptive)
+        Engine->>Proxy: 6a. Match Found: Log Telemetry & Alert (SECRET_LEAK)
+        Proxy-->>Client: 7a. Deliver Response (200 OK)
+    else Mode: Block (Enforced Policy)
+        Engine->>Proxy: 6b. Policy Violation: Reject Response
+        Proxy-->>Client: 7b. 403 Forbidden (Original Response Discarded)
+    end
+
+    Note over Proxy,Engine: Response di atas 200KB tidak bisa di-Block secara fisik --<br/>bytes sudah terlanjur streaming ke client saat scan dimulai;<br/>untuk kasus ini hanya Alert (deteksi+catat) yang berlaku, apa pun mode-nya.
+```
+
+#### Ringkasan Kapabilitas Intersepsi Egress DLP:
+
+| Pilar Kapabilitas | Mekanisme Teknis | Dampak Operasional |
+| :--- | :--- | :--- |
+| 🔄 **Outbound Stream Interception** | Mengintersepsi *chunked response body* langsung dari aplikasi backend sebelum terkirim ke socket TCP client. | Tidak memerlukan perubahan kode aplikasi di backend sama sekali. |
+| 🇮🇩 **Pola Deteksi PII Indonesia** | Pattern matching berbasis RE2 + entropy scanning untuk NIK (KTP), NPWP, BPJS, dan Nomor HP Indonesia. | Deteksi spesifik untuk kebutuhan kepatuhan regulasi data di Indonesia (UU PDP). |
+| 🔑 **Deteksi Kredensial & Secrets** | Deteksi otomatis AWS/GCP API Keys, Private Keys (PEM), JWT tokens, dan DB connection strings. | Mencegah *accidental secret exposure* dari endpoint API debug/error log backend. |
+| 🎛️ **Dual Interception Modes** | **Mode Alert (default, non-disruptive)**: deteksi + catat telemetry, traffic tidak terganggu.<br>**Mode Block**: `403 Forbidden` — seluruh response ditolak (bukan redaksi/masking). | Fleksibilitas deployment: amati *false-positive* dulu sebelum mengaktifkan penindakan aktif. |
 
 <p align="center">
   <img src="demo/dlp-poc-demo.gif" alt="Tameng Egress DLP Telemetry & Leak Alert Demo" width="780">
@@ -408,7 +445,44 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 
 ### Egress Data Loss Prevention (DLP) 🔍
 
-Tameng actively inspects outbound response bodies leaving backend servers to detect and prevent sensitive data leaks (such as Indonesian NIK, NPWP, BPJS, phone numbers, JWTs, and cloud API keys) in real-time.
+Tameng operates as an inline *Reverse Proxy* that actively intercepts outbound response body streams leaving backend applications to detect and prevent sensitive data leaks (such as Indonesian NIK, NPWP, BPJS, phone numbers, JWTs, and cloud API keys) in real-time.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as 🌐 Client / Attacker
+    participant Proxy as 🛡️ Tameng WAF (Reverse Proxy)
+    participant Engine as 🔍 Egress DLP Scanner (Stream Engine)
+    participant Backend as 🖥️ Backend App / Database
+
+    Note over Client,Backend: INBOUND TRAFFIC (Request Inspection)
+    Client->>Proxy: 1. HTTP Request (GET /customer/123)
+    Proxy->>Proxy: 2. WAF Signatures + ML Threat Scoring
+    Proxy->>Backend: 3. Forward Clean Request
+
+    Note over Client,Backend: OUTBOUND TRAFFIC (Egress Interception & DLP Inspection)
+    Backend-->>Proxy: 4. HTTP Response Stream (Body containing NIK / Credentials)
+    Proxy->>Engine: 5. Inspect Response Body (Buffered Stream Scanning, up to 200KB scan limit)
+
+    alt Mode: Alert (Default - Non-Disruptive)
+        Engine->>Proxy: 6a. Match Found: Log Telemetry & Alert (SECRET_LEAK)
+        Proxy-->>Client: 7a. Deliver Response (200 OK)
+    else Mode: Block (Enforced Policy)
+        Engine->>Proxy: 6b. Policy Violation: Reject Response
+        Proxy-->>Client: 7b. 403 Forbidden (Original Response Discarded)
+    end
+
+    Note over Proxy,Engine: Responses larger than 200KB cannot be physically Blocked --<br/>bytes are already streaming to the client by the time scanning starts;<br/>only Alert (detect+log) applies in that case, regardless of configured mode.
+```
+
+#### Egress DLP Interception Summary:
+
+| Feature Pillar | Technical Mechanism | Operational Value |
+| :--- | :--- | :--- |
+| 🔄 **Outbound Stream Interception** | Intercepts chunked response bodies directly from backend applications before writing to client TCP sockets. | Zero backend application code modifications required. |
+| 🇮🇩 **Indonesian PII Patterns** | RE2 pattern matching + entropy scanning for NIK (KTP), NPWP, BPJS, and Indonesian Phone Numbers. | Tailored compliance enforcement for Indonesian Data Protection (UU PDP). |
+| 🔑 **Credentials & Secrets Detection** | Automated pattern matching for AWS/GCP API Keys, Private Keys (PEM), JWT tokens, and DB connection strings. | Prevents accidental secret exposure in backend debug/error log endpoints. |
+| 🎛️ **Dual Interception Modes** | **Alert Mode (default, non-disruptive)**: detect + log telemetry, traffic unaffected.<br>**Block Mode**: `403 Forbidden` -- the entire response is rejected (no redaction/masking). | Deployment flexibility: monitor false-positive rates before enabling active blocking. |
 
 <p align="center">
   <img src="demo/dlp-poc-demo.gif" alt="Tameng Egress DLP Telemetry & Leak Alert Demo" width="780">
