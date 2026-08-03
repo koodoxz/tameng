@@ -105,6 +105,17 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 | **Guard Protokol** | Deteksi request smuggling, GraphQL depth limiting, WebSocket rate limiting |
 | **Analisis Behavioral** | Baseline deviation detection, credential stuffing identification, anomaly correlation |
 
+### Egress Data Loss Prevention (DLP) 🔍
+
+Tameng secara aktif memindai traffic *outbound* (response body) yang keluar dari backend menuju client untuk mencegah kebocoran data sensitif (seperti NIK, NPWP, BPJS, nomor HP Indonesia, JWT, dan API Key cloud) secara real-time.
+
+<p align="center">
+  <img src="demo/dlp-poc-demo.gif" alt="Tameng Egress DLP Telemetry & Leak Alert Demo" width="780">
+</p>
+
+> [!NOTE]
+> **Sensitivitas PII & Mode Detection:** Secara default, deteksi PII (seperti NIK dan nomor HP) berjalan dalam mode **Alert** (deteksi dan catat telemetry) sehingga operator dapat mengamati tingkat *false-positive* pada traffic produksi sebelum mengaktifkan mode **Block**.
+
 > [!WARNING]
 > **Batasan yang jujur kami sampaikan:** blokir reputasi-IP saat ini berdurasi tetap dan berlaku untuk seluruh IP sumber yang terdeteksi — pada jaringan dengan IP keluar bersama (NAT/proxy korporat/CDN), ini bisa berdampak ke pengguna lain di IP yang sama. Durasi dapat diatur lewat konfigurasi. Lihat [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan) kalau kamu menemukan dampak ini di deploymentmu.
 
@@ -394,6 +405,17 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 | **Threat Intelligence** | STIX/TAXII integration, MITRE ATT&CK mapping, IOC feeds |
 | **Protocol Guards** | Request smuggling detection, GraphQL depth limiting, WebSocket rate limiting |
 | **Behavioral Analysis** | Baseline deviation detection, credential stuffing identification, anomaly correlation |
+
+### Egress Data Loss Prevention (DLP) 🔍
+
+Tameng actively inspects outbound response bodies leaving backend servers to detect and prevent sensitive data leaks (such as Indonesian NIK, NPWP, BPJS, phone numbers, JWTs, and cloud API keys) in real-time.
+
+<p align="center">
+  <img src="demo/dlp-poc-demo.gif" alt="Tameng Egress DLP Telemetry & Leak Alert Demo" width="780">
+</p>
+
+> [!NOTE]
+> **PII Sensitivity & Detection Mode:** By default, PII detection operates in **Alert** mode (detect & log telemetry) allowing security operators to monitor production traffic patterns before promoting rules to **Block** mode.
 
 > [!WARNING]
 > **Honest limitation:** IP-reputation blocking currently uses a fixed duration applied to the entire source IP once triggered — on networks with shared egress IPs (NAT, corporate proxy, CDN), this can affect other users behind the same IP. Duration is configurable. See [Security & Vulnerability Reporting](#security--vulnerability-reporting) if you observe this impact in your deployment.
