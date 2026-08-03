@@ -10,7 +10,7 @@
 
 <p align="center">
   <b>A single-binary, ML-assisted Web Application Firewall, written in Go.</b><br>
-  <sub>No Python sidecar. No external inference service. No 12-container stack. One binary, one YAML file, one systemd unit.</sub>
+  <sub>No Python sidecar for real-time threat detection. No external inference service for WAF scoring. No 12-container stack. One binary, one YAML file, one systemd unit.</sub>
 </p>
 
 <p align="center">
@@ -44,6 +44,7 @@
 - [Arsitektur](#arsitektur)
 - [Testing](#testing)
 - [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan)
+- [Forecasting Opsional](#forecasting-opsional)
 - [Roadmap](#roadmap)
 - [Berkontribusi](#berkontribusi)
 - [Tentang Pembuat](#tentang-pembuat)
@@ -70,7 +71,7 @@ Dibandingkan dengan WAF open-source lainnya seperti **Coraza** (library WAF murn
 
 - **Baterai Lengkap:** Satu biner menggabungkan mesin WAF + penilaian ML + pelacakan aktor dua-tahap + eskalasi DDoS 3-fase + lapisan honeypot/deception + integrasi threat intelligence (STIX/TAXII) + pemetaan MITRE ATT&CK
 - **Keamanan Regex:** Engine WAF menggunakan RE2 Go (bukan Oniguruma/PCRE) — ReDoS (regex backtracking bencana) mustahil secara struktural, bukan hanya mitigated
-- **ML Asli:** Inferensi model berbasis LightGBM berjalan asli dalam Go (via library `leaves`) — tidak ada proses Python sidecar di runtime
+- **ML Asli:** Inferensi model berbasis LightGBM berjalan asli dalam Go (via library `leaves`) untuk threat scoring real-time per-request — tidak ada proses Python sidecar di jalur request. Tameng juga menyertakan fitur forecasting tren opsional berbasis Prophet (forecasting volume gray-zone/alert) yang memang membutuhkan runtime Python 3 lokal — ini subsistem terpisah dan opsional (nonaktif secara default), bukan bagian dari jalur WAF/scoring inti. Lihat [Forecasting Opsional](#forecasting-opsional)
 - **Tracking Aktor:** Melacak aktor dalam dua tahap (lightweight counters → full profiles) dengan eviction LRU aman memori, bahkan di bawah beban korban DDoS
 - **Transparansi Pengujian Adversarial:** Historik pengujian mendalam dengan alat pembuat serangan khusus (dibuat oleh penulis yang sama). Kami mempublikasikan eksperimen yang gagal juga — kebanyakan security tools tidak pernah mengumumkan ketika sebuah pendekatan tidak membantu.
 
@@ -108,7 +109,7 @@ Tameng diuji secara internal menggunakan **Ratatoskr** — tool pembuat serangan
 
 ### Prasyarat
 
-- **Go 1.21+** (build dari sumber)
+- **Go 1.26+** (build dari sumber)
 - **Docker & Docker Compose** (Docker deployment) — tidak perlu Go installed
 - **SQLite3** (embedded di binary Go, CGO diperlukan untuk build)
 
@@ -140,7 +141,7 @@ docker-compose logs -f svalinn
 ### Opsi 2: Dari Sumber
 
 ```bash
-# Prerequisites: Go 1.21+ dengan CGO enabled untuk sqlite3
+# Prerequisites: Go 1.26+ dengan CGO enabled untuk sqlite3
 
 git clone https://github.com/koodoxz/tameng.git
 cd tameng
@@ -183,6 +184,7 @@ Request yang tidak cocok dengan rute Tameng sendiri (health, metrics, TAXII, API
 - Beberapa path administratif/decoy bawaan Tameng selalu menutupi backend Anda kalau aplikasi Anda memakai path yang sama — cek `configs/svalinn.yaml` dan source `internal/server/server.go` untuk daftar lengkapnya sebelum menentukan struktur routing aplikasi Anda.
 - `X-Forwarded-Proto` yang diteruskan ke backend hanya benar kalau TLS langsung terminate di Tameng sendiri — kalau TLS di-terminate di nginx/reverse-proxy lain di depan Tameng, backend akan selalu melihat "http".
 - Jangan arahkan `backend_url` ke Tameng sendiri (loop) atau ke alamat yang tidak Anda kendalikan.
+- Sama seperti WAF secara umum, blokir reputasi-IP di depan backend Anda berdurasi tetap dan berlaku untuk seluruh IP sumber — pada jaringan dengan IP keluar bersama (NAT/proxy korporat/CDN), ini bisa berdampak ke pengguna lain di IP yang sama yang mencoba mengakses aplikasi Anda. Lihat catatan lengkap di [Fitur Keamanan Inti](#fitur-keamanan-inti).
 
 ## Endpoint API
 
@@ -246,10 +248,16 @@ internal/
 
 ```mermaid
 graph LR
-    Req[Incoming Request] --> Pipeline[Middleware Pipeline]
-    Pipeline --> WAF[WAF Engine + ML Scoring]
-    WAF --> Actor[Actor Tracking & DDoS]
-    Actor --> Deception{Trap / Honeypot?}
+    Req[Incoming Request] --> Pipeline
+
+    subgraph Pipeline[Middleware Pipeline]
+        direction LR
+        Regex["WAF Engine<br/>RE2 Regex (ReDoS-safe)"] --> ML["ML Scoring<br/>LightGBM via leaves"]
+        ML --> ActorTrack["Actor Tracking<br/>Two-Stage (ringan → profil penuh)"]
+        ActorTrack --> DDoS["DDoS Escalation<br/>Challenge → Throttle → Block"]
+    end
+
+    Pipeline --> Deception{Trap / Honeypot?}
     Deception -- Ya --> Block[Block / Challenge / Encrypt]
     Deception -- Tidak --> Backend[Forward to Backend]
 ```
@@ -274,6 +282,12 @@ Lihat file `*_test.go` untuk differential fuzz tests, mutation tests, dan advers
 Tameng menjalankan `/.well-known/security.txt` di setiap instance yang jalan (lihat `/security-policy` untuk kebijakan lengkap). Untuk melaporkan kerentanan atau perilaku tak terduga (termasuk dampak dari desain blokir-reputasi-IP di atas), hubungi **koodoxz@gmail.com**. Target respons awal: 24 jam. Triage: 72 jam.
 
 Mohon jangan buka issue publik untuk kerentanan yang belum di-patch — laporkan lewat email dulu.
+
+## Forecasting Opsional
+
+Tameng menyertakan subsistem forecasting tren opsional (`internal/ml/prophet.go`, `anomaly.go`) yang shell-out ke proses Python 3 lokal untuk memprediksi tren volume gray-zone/alert. Fitur ini **nonaktif secara default** dan **tidak dibutuhkan** untuk perlindungan WAF, pencocokan signature, atau threat scoring LightGBM — ketiganya berjalan sepenuhnya di dalam satu biner Go tanpa proses eksternal apa pun.
+
+Mengaktifkan forecasting membutuhkan instalasi Python 3 lokal dengan script di bawah `.harvest/scripts/` (berbasis Prophet) tersedia di host. Kalau kamu tidak butuh forecasting tren, kamu tetap mendapat pengalaman single-binary tanpa sidecar sepenuhnya, langsung dari awal.
 
 ## Roadmap
 
@@ -317,6 +331,7 @@ Tameng dikembangkan dan dirawat oleh satu orang developer/security engineer asal
 - [Architecture](#architecture)
 - [Testing](#testing-en)
 - [Security & Vulnerability Reporting](#security--vulnerability-reporting)
+- [Optional Forecasting](#optional-forecasting-en)
 - [Roadmap](#roadmap-en)
 - [Contributing](#contributing-en)
 - [About the Author](#about-the-author)
@@ -343,7 +358,7 @@ Compared to other open-source WAFs like **Coraza** (a pure WAF library, ModSecur
 
 - **Batteries Included:** One binary combines WAF signature engine + ML threat scoring + two-stage actor tracking + 3-phase DDoS escalation (Challenge → Throttle → Block) + honeypot/deception layer + STIX/TAXII threat intelligence + MITRE ATT&CK mapping
 - **Regex Safety:** WAF engine uses Go's RE2 regex engine (not Oniguruma/PCRE) — ReDoS (catastrophic backtracking) is structurally impossible, not just mitigated
-- **Native ML:** LightGBM model inference runs natively in Go (via the `leaves` library) — no Python sidecar process required at runtime
+- **Native ML:** LightGBM model inference runs natively in Go (via the `leaves` library) for real-time per-request threat scoring — no Python sidecar in the request path. Tameng also ships an optional Prophet-based trend-forecasting feature (gray-zone/alert volume forecasting) that does require a local Python 3 runtime — this is a separate, optional subsystem (disabled by default), not part of the core WAF/scoring path. See [Optional Forecasting](#optional-forecasting-en)
 - **Actor Tracking:** Tracks threat actors in two stages (lightweight counters → full behavioral profiles) with memory-safe LRU eviction, even under DDoS victim load
 - **Adversarial Testing Transparency:** Deep red-team history with a purpose-built companion attack tool. We publish failed optimization attempts too — most security tools never announce when an approach didn't help.
 
@@ -381,7 +396,7 @@ Tameng is tested internally using **Ratatoskr** — a custom payload generator a
 
 ### Prerequisites
 
-- **Go 1.21+** (to build from source)
+- **Go 1.26+** (to build from source)
 - **Docker & Docker Compose** (Docker deployment) — Go not required
 - **SQLite3** (embedded in Go binary; CGO required for building)
 
@@ -404,7 +419,7 @@ docker-compose logs -f svalinn
 ### Option 2: From Source
 
 ```bash
-# Prerequisites: Go 1.21+ with CGO enabled for sqlite3
+# Prerequisites: Go 1.26+ with CGO enabled for sqlite3
 
 git clone https://github.com/koodoxz/tameng.git
 cd tameng
@@ -447,6 +462,7 @@ Any request that doesn't match one of Tameng's own routes (health, metrics, TAXI
 - Several built-in administrative/decoy paths Tameng already owns always shadow your backend if your app uses the same paths — check `configs/svalinn.yaml` and the `internal/server/server.go` source for the full list before finalizing your app's routing.
 - The `X-Forwarded-Proto` header forwarded to the backend is only accurate when TLS terminates directly at Tameng — if TLS terminates at an upstream nginx/reverse-proxy in front of Tameng instead, the backend will always see "http".
 - Don't point `backend_url` at Tameng's own listener (creates a loop) or at an address you don't control.
+- Same as WAF blocking in general, IP-reputation blocking in front of your backend uses a fixed duration applied to the entire source IP — on networks with shared egress IPs (NAT, corporate proxy, CDN), this can affect other users behind the same IP trying to reach your application. See the full note in [Core Security Features](#core-security-features).
 
 ## API Endpoints
 
@@ -510,10 +526,16 @@ internal/
 
 ```mermaid
 graph LR
-    Req[Incoming Request] --> Pipeline[Middleware Pipeline]
-    Pipeline --> WAF[WAF Engine + ML Scoring]
-    WAF --> Actor[Actor Tracking & DDoS]
-    Actor --> Deception{Trap / Honeypot?}
+    Req[Incoming Request] --> Pipeline
+
+    subgraph Pipeline[Middleware Pipeline]
+        direction LR
+        Regex["WAF Engine<br/>RE2 Regex (ReDoS-safe)"] --> ML["ML Scoring<br/>LightGBM via leaves"]
+        ML --> ActorTrack["Actor Tracking<br/>Two-Stage (lightweight → full profile)"]
+        ActorTrack --> DDoS["DDoS Escalation<br/>Challenge → Throttle → Block"]
+    end
+
+    Pipeline --> Deception{Trap / Honeypot?}
     Deception -- Yes --> Block[Block / Challenge / Encrypt]
     Deception -- No --> Backend[Forward to Backend]
 ```
@@ -538,6 +560,12 @@ See `*_test.go` files for differential fuzz tests, mutation tests, and adversari
 Every running Tameng instance serves `/.well-known/security.txt` (see `/security-policy` for the full policy). To report a vulnerability or unexpected behavior (including impact from the IP-reputation blocking design noted above), contact **koodoxz@gmail.com**. Initial response target: 24 hours. Triage: 72 hours.
 
 Please do not open a public issue for unpatched vulnerabilities — email first.
+
+## Optional Forecasting (EN)
+
+Tameng includes an optional trend-forecasting subsystem (`internal/ml/prophet.go`, `anomaly.go`) that shells out to a local Python 3 process for gray-zone/alert-volume trend prediction. This is **disabled by default** and is **not required** for WAF protection, signature matching, or LightGBM threat scoring — all three run entirely inside the single Go binary with no external process.
+
+Enabling forecasting requires a local Python 3 installation with the scripts under `.harvest/scripts/` (Prophet-based) available on the host. If you don't need trend forecasting, you get the full single-binary, no-sidecar experience out of the box.
 
 ## Roadmap (EN)
 
