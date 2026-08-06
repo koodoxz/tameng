@@ -157,6 +157,39 @@ sequenceDiagram
 > [!WARNING]
 > **Batasan yang jujur kami sampaikan:** blokir reputasi-IP saat ini berdurasi tetap dan berlaku untuk seluruh IP sumber yang terdeteksi — pada jaringan dengan IP keluar bersama (NAT/proxy korporat/CDN), ini bisa berdampak ke pengguna lain di IP yang sama. Durasi dapat diatur lewat konfigurasi. Lihat [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan) kalau kamu menemukan dampak ini di deploymentmu.
 
+### Deteksi Anti-Eksfiltrasi Egress (Non-DLP) 🕵️
+
+Kebanyakan WAF di pasaran hanya fokus pada traffic *inbound*. Engine egress yang sama di atas (`internal/egress/advanced.go`) juga menjalankan tiga pemeriksaan tambahan terhadap setiap response yang lewat Tameng — relevan untuk skenario backend yang sudah disusupi (webshell, malware) dan mencoba mengirim data keluar lewat jalur HTTP normal.
+
+```mermaid
+graph TD
+    Response[Response Backend Anda ke Client, lewat Tameng] --> Engine[Tameng Egress Engine]
+
+    Engine -->|1. Base64 / Entropy Scan| Encoded{Blob Base64 lebih dari 10KB?}
+    Encoded -- Ya --> BlockEncoded[BLOCK otomatis: ENCODED_DATA critical]
+    Encoded -- Tidak, tapi entropy lebih dari 4.5 bit per byte --> AlertEncoded[ALERT saja: ENCODED_DATA medium]
+
+    Engine -->|2. Anomali Volume Velocity| Velocity{Lonjakan 5x dari baseline, atau lebih dari 10MB per menit?}
+    Velocity -- Ya --> AlertVelocity[ALERT saja - engine ini tidak memiliki kemampuan block]
+
+    Engine -->|3. Geofencing Destinasi| Geo{Negara tujuan ada di blocked_countries?}
+    Geo -- Ya, default --> AlertGeo[ALERT default: GEOFENCE]
+    Geo -- Ya, jika mode diset ke block --> BlockGeo[BLOCK jika dikonfigurasi: GEOFENCE]
+
+    Engine -->|4. Pattern Secret/PII, lihat Egress DLP di atas| Secret{NIK, AWS Key, atau JWT terdeteksi?}
+    Secret -- Kredensial cloud standar --> BlockSecret[BLOCK otomatis: SECRET_LEAK]
+    Secret -- PII atau pattern false-positif tinggi --> AlertSecret[ALERT default, bisa diset ke block]
+```
+
+| Pilar | Mekanisme Teknis | Perilaku Default |
+| :--- | :--- | :--- |
+| 📦 **Deteksi Payload Terenkode** | Blob Base64 >10KB di response body → **block otomatis** (severity critical). Body dengan Shannon entropy >4.5 bit/byte (>500 byte) → alert (medium), indikasi data terenkripsi/di-obfuscate. | Base64 besar: block. Entropy tinggi saja: alert. |
+| 📈 **Anomali Volume (Velocity)** | Baseline dinamis per-user/IP; lonjakan ≥5× dari rata-rata historis, atau >10MB/menit, memicu alert. | **Alert saja — engine ini tidak memiliki kemampuan block sama sekali, di severity apa pun.** |
+| 🌍 **Geofencing Destinasi** | Response menuju negara di `blocked_countries` (default: `RU, CN, KP, IR, BY, SY`) terdeteksi via GeoIP dari IP client sebenarnya, bukan Host header. | **Alert secara default** (`geofence_mode: alert`) — ubah ke `block` di config untuk penegakan aktif. |
+
+> [!IMPORTANT]
+> **Batasan cakupan yang jujur kami sampaikan:** ketiga pemeriksaan di atas (dan DLP sebelumnya) hanya menganalisis **response HTTP yang mengalir kembali melalui Tameng** ke client — baik dari handler Tameng sendiri maupun dari backend yang di-*reverse-proxy* di baliknya. Tameng adalah WAF Layer-7 di jalur request/response, **bukan** firewall level jaringan/host yang mengawasi seluruh traffic keluar server. Malware yang membuka koneksi outbound sendiri secara langsung (misal reverse shell yang connect keluar ke C2, atau C2 lewat DNS tunneling) **tidak terlihat oleh engine ini** — itu di luar jangkauan arsitektur reverse-proxy L7 mana pun, bukan keterbatasan khusus Tameng.
+
 ## Mulai Cepat
 
 ### Prasyarat
@@ -495,6 +528,39 @@ sequenceDiagram
 
 > [!WARNING]
 > **Honest limitation:** IP-reputation blocking currently uses a fixed duration applied to the entire source IP once triggered — on networks with shared egress IPs (NAT, corporate proxy, CDN), this can affect other users behind the same IP. Duration is configurable. See [Security & Vulnerability Reporting](#security--vulnerability-reporting) if you observe this impact in your deployment.
+
+### Egress Anti-Exfiltration Detection (Beyond DLP) 🕵️
+
+Most WAFs on the market focus almost entirely on inbound traffic. The same egress engine above (`internal/egress/advanced.go`) also runs three additional checks against every response passing through Tameng — relevant for a compromised-backend scenario (webshell, malware) attempting to move data out over normal HTTP.
+
+```mermaid
+graph TD
+    Response[Your Backend's Response to Client, via Tameng] --> Engine[Tameng Egress Engine]
+
+    Engine -->|1. Base64 / Entropy Scan| Encoded{Base64 blob larger than 10KB?}
+    Encoded -- Yes --> BlockEncoded[Auto-BLOCK: ENCODED_DATA critical]
+    Encoded -- No, but entropy above 4.5 bits per byte --> AlertEncoded[ALERT only: ENCODED_DATA medium]
+
+    Engine -->|2. Velocity Volume Anomaly| Velocity{5x spike from baseline, or above 10MB per minute?}
+    Velocity -- Yes --> AlertVelocity[ALERT only - this engine has no block capability]
+
+    Engine -->|3. Destination Geofencing| Geo{Destination country in blocked_countries?}
+    Geo -- Yes, default --> AlertGeo[Default ALERT: GEOFENCE]
+    Geo -- Yes, if mode set to block --> BlockGeo[BLOCK if configured: GEOFENCE]
+
+    Engine -->|4. Secret/PII Pattern, see Egress DLP above| Secret{NIK, AWS Key, or JWT detected?}
+    Secret -- Standard cloud credential --> BlockSecret[Auto-BLOCK: SECRET_LEAK]
+    Secret -- PII or high-false-positive pattern --> AlertSecret[Default ALERT, can be set to block]
+```
+
+| Pillar | Technical Mechanism | Default Behavior |
+| :--- | :--- | :--- |
+| 📦 **Encoded Payload Detection** | A Base64 blob >10KB in the response body → **auto-block** (critical severity). A body with Shannon entropy >4.5 bits/byte (>500 bytes) → alert (medium), indicating encrypted/obfuscated data. | Large Base64: block. High entropy alone: alert. |
+| 📈 **Volume Anomaly (Velocity)** | Dynamic per-user/IP baseline; a spike ≥5× the historical average, or >10MB/minute, triggers an alert. | **Alert only — this engine has no block capability at all, at any severity.** |
+| 🌍 **Destination Geofencing** | A response destined for a country in `blocked_countries` (default: `RU, CN, KP, IR, BY, SY`), resolved via GeoIP on the real client IP, not the Host header. | **Alert by default** (`geofence_mode: alert`) — set to `block` in config for active enforcement. |
+
+> [!IMPORTANT]
+> **Honest scope limitation:** the three checks above (and DLP before them) only analyze **HTTP responses that flow back through Tameng** to the client — whether from Tameng's own handlers or from a backend reverse-proxied behind it. Tameng is a Layer-7 WAF sitting in the request/response path, **not** a network- or host-level firewall monitoring all outbound traffic from the server. Malware that opens its own independent outbound connection (e.g. a reverse shell connecting directly out to a C2 server, or C2 over DNS tunneling) **is invisible to this engine** — that's outside the reach of any L7 reverse-proxy architecture, not a Tameng-specific gap.
 
 ## Quick Start (EN)
 
