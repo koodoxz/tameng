@@ -199,6 +199,94 @@ func TestLoad_ValidBusinessLogicMode_NormalizesCase(t *testing.T) {
 	}
 }
 
+// REQ SVALINN-LOGGING-CONFIG-WIRE-001
+//
+// Logging.Level and Logging.Format were defaulted (setDefaults) but never
+// validated -- a typo like "Debug" or "jsonn" passed through unchanged and
+// was silently misread downstream (logger.SetLevel's own switch falls back
+// to info on no match; NewWithFormat's format=="json" check is an exact,
+// case-sensitive string comparison). Same silent-misconfiguration class as
+// the egress/business-logic modes above, closed the same way.
+
+func TestValidateModes_LoggingFieldsValid_Normalizes(t *testing.T) {
+	cfg := &Config{}
+	cfg.Logging.Level = "DEBUG"
+	cfg.Logging.Format = "JSON"
+
+	if err := validateModes(cfg); err != nil {
+		t.Fatalf("validateModes() returned error %v, want nil", err)
+	}
+	if cfg.Logging.Level != "debug" {
+		t.Errorf("Logging.Level = %q, want normalized %q", cfg.Logging.Level, "debug")
+	}
+	if cfg.Logging.Format != "json" {
+		t.Errorf("Logging.Format = %q, want normalized %q", cfg.Logging.Format, "json")
+	}
+}
+
+func TestValidateModes_InvalidLoggingLevel_ReturnsError(t *testing.T) {
+	cfg := &Config{}
+	cfg.Logging.Level = "verbose" // not a real level
+	cfg.Logging.Format = "json"
+
+	err := validateModes(cfg)
+	if err == nil {
+		t.Fatal("validateModes() returned nil error, want an error for the invalid logging.level")
+	}
+	if !strings.Contains(err.Error(), "logging.level") {
+		t.Errorf("error %q does not name logging.level as the offending field", err.Error())
+	}
+}
+
+func TestValidateModes_InvalidLoggingFormat_ReturnsError(t *testing.T) {
+	cfg := &Config{}
+	cfg.Logging.Level = "info"
+	cfg.Logging.Format = "yaml" // not a real format
+
+	err := validateModes(cfg)
+	if err == nil {
+		t.Fatal("validateModes() returned nil error, want an error for the invalid logging.format")
+	}
+	if !strings.Contains(err.Error(), "logging.format") {
+		t.Errorf("error %q does not name logging.format as the offending field", err.Error())
+	}
+}
+
+func TestLoad_DefaultLoggingValues_PassValidation(t *testing.T) {
+	// setDefaults sets Logging.Level="info"/Logging.Format="json" before
+	// validateModes runs -- this guards against the defaults themselves ever
+	// drifting out of sync with validLogLevels/validLogFormats.
+	path := writeTestConfig(t, "  enabled: true\n")
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() returned error %v, want nil for defaulted logging fields", err)
+	}
+	if cfg.Logging.Level != "info" {
+		t.Errorf("Logging.Level = %q, want default %q", cfg.Logging.Level, "info")
+	}
+	if cfg.Logging.Format != "json" {
+		t.Errorf("Logging.Format = %q, want default %q", cfg.Logging.Format, "json")
+	}
+}
+
+func TestLoad_InvalidLoggingLevel_ReturnsError(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "svalinn.yaml")
+	content := "logging:\n  level: \"trace\"\n" // not a real level
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("failed to write test config: %v", err)
+	}
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("Load() returned nil error, want an error for an invalid logging.level")
+	}
+	if !strings.Contains(err.Error(), "logging.level") {
+		t.Errorf("error %q does not name logging.level as the offending field", err.Error())
+	}
+}
+
 func TestModeList_SortsDeterministically(t *testing.T) {
 	got := modeList(map[string]bool{"log": true, "alert": true, "block": true})
 	if got != "alert|block|log" {

@@ -36,6 +36,17 @@ func New(module string) *Logger {
 	}
 }
 
+// NewWithFormat creates a logger for module writing to stdout in the given
+// format: "json" for raw zerolog (machine-parsable), anything else
+// (including "console" or unrecognized values) for the human-readable
+// ConsoleWriter New() already uses.
+func NewWithFormat(module string, format string) *Logger {
+	if format == "json" {
+		return NewWithWriter(module, os.Stdout)
+	}
+	return New(module)
+}
+
 // NewWithWriter creates a logger with custom writer
 func NewWithWriter(module string, w io.Writer) *Logger {
 	log := zerolog.New(w).

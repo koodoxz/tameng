@@ -39,15 +39,22 @@ func main() {
 	// Print banner
 	fmt.Print(banner)
 
-	// Initialize logger
-	log := logger.New("TAMENG")
-	log.Info("Starting Tameng Security Shield...")
-
-	// Load configuration
+	// Load configuration first so the real logger can be built with the
+	// configured level/format from the start (REQ
+	// SVALINN-LOGGING-CONFIG-WIRE-001 -- logging.level/logging.format used
+	// to be defaulted but never actually reached logger.SetLevel/format
+	// selection). No logger exists yet at this point, so a load failure is
+	// reported directly to stderr.
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		log.Fatal("Failed to load configuration", "error", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
+		os.Exit(1)
 	}
+
+	// Initialize logger using the now-loaded, validated logging config.
+	logger.SetLevel(cfg.Logging.Level)
+	log := logger.NewWithFormat("TAMENG", cfg.Logging.Format)
+	log.Info("Starting Tameng Security Shield...")
 	log.Info("Configuration loaded", "path", *configPath)
 
 	// Create server

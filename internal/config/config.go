@@ -449,6 +449,16 @@ var validEgressModes = map[string]bool{"block": true, "alert": true, "log": true
 // SVALINN-EGRESS-MODE-VALIDATE-001 (extended).
 var validBusinessLogicModes = map[string]bool{"detect": true, "block": true}
 
+// validLogLevels/validLogFormats: logging.level and logging.format were
+// defaulted (setDefaults) but never validated -- logger.SetLevel's switch
+// silently falls back to info on any unrecognized value, and
+// logger.NewWithFormat's format=="json" check is an exact string compare, so
+// a typo like "Debug" or "jsonn" would silently behave as if unset with no
+// error at startup. Same silent-misconfiguration class as the egress/
+// business-logic modes above. REQ SVALINN-LOGGING-CONFIG-WIRE-001.
+var validLogLevels = map[string]bool{"debug": true, "info": true, "warn": true, "error": true}
+var validLogFormats = map[string]bool{"json": true, "console": true}
+
 // modeList renders an allowed-value set as a deterministic, sorted
 // "a|b|c" string for error messages -- map iteration order is randomized in
 // Go, and an error message that changes wording between runs is unpleasant
@@ -501,6 +511,8 @@ func validateModes(cfg *Config) error {
 		{"advanced_egress.pii_secret_mode", validEgressModes, &cfg.AdvancedEgress.PIISecretMode},
 		{"advanced_egress.generic_secret_mode", validEgressModes, &cfg.AdvancedEgress.GenericSecretMode},
 		{"business_logic_abuse.mode", validBusinessLogicModes, &cfg.BusinessLogic.Mode},
+		{"logging.level", validLogLevels, &cfg.Logging.Level},
+		{"logging.format", validLogFormats, &cfg.Logging.Format},
 	}
 	for _, f := range fields {
 		if err := normalizeMode(f.name, f.allowed, f.mode); err != nil {

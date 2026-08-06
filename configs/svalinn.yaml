@@ -118,7 +118,9 @@ database:
   in_memory: false
 
 logging:
+  # level: debug|info|warn|error (validated at startup, unrecognized values fail config load)
   level: "info"
+  # format: json (raw, machine-parsable) | console (human-readable)
   format: "json"
   output_path: ""
 
