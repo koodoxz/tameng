@@ -420,6 +420,8 @@ Tameng dikembangkan dan dirawat oleh satu orang developer/security engineer asal
 
 **AGPL-3.0** — Kode sumber harus tersedia untuk semua pengguna dari versi yang dimodifikasi, **termasuk ketika dijalankan sebagai layanan jaringan** (ini yang membedakan AGPL dari GPL biasa). Provider hosting/cloud tidak dapat mengambil kode ini, memodifikasinya, dan menawarkannya sebagai layanan bersaing tanpa merilis modifikasi mereka. Teks lengkap: [LICENSE](LICENSE).
 
+AGPL-3.0 untuk penggunaan komunitas/open-source. Butuh lisensi dengan syarat berbeda (komersial)? Hubungi **koodoxz@gmail.com**.
+
 ---
 
 # English
@@ -801,6 +803,8 @@ Tameng is built and maintained by a solo Indonesian developer/security engineer,
 ## License
 
 **AGPL-3.0** — Source code must be available to all users of any modified version, **including when run as a network service** (this is what distinguishes AGPL from plain GPL). A cloud/hosting provider cannot take this code, modify it, and offer it as a competing service without releasing their modifications. Full text: [LICENSE](LICENSE).
+
+AGPL-3.0 for community/open-source use. Need different (commercial) licensing terms? Contact **koodoxz@gmail.com**.
 
 <p align="center">
   <sub>🇮🇩 Made in Indonesia.</sub>
