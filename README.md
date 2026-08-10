@@ -44,6 +44,7 @@
 - [Arsitektur](#arsitektur)
 - [Testing](#testing)
 - [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan)
+- [Kerangka Regulasi & Tata Kelola](#kerangka-regulasi--tata-kelola)
 - [Forecasting Opsional](#forecasting-opsional)
 - [Roadmap](#roadmap)
 - [Berkontribusi](#berkontribusi)
@@ -368,6 +369,23 @@ Tameng menjalankan `/.well-known/security.txt` di setiap instance yang jalan (li
 
 Mohon jangan buka issue publik untuk kerentanan yang belum di-patch — laporkan lewat email dulu.
 
+## Kerangka Regulasi & Tata Kelola 📋
+
+Tameng dirancang dengan mempertimbangkan prinsip-prinsip dari kerangka tata kelola AI/TI OJK ("Tata Kelola Kecerdasan Artifisial Perbankan Indonesia") — reliability, accountability, transparency, data privacy, human oversight. Ini bukan klaim sertifikasi atau kepatuhan formal; kerangka tersebut sendiri berstatus panduan/acuan minimal bagi sektor jasa keuangan, bukan regulasi yang mengikat. Institusi jasa keuangan yang mengoperasikan Tameng tetap bertanggung jawab penuh atas kepatuhan mereka sendiri terhadap regulasi yang berlaku (SEOJK 29/2022, POJK 11/2022, UU PDP, dll).
+
+### Audit Data-Handling Tameng vs UU PDP 27/2022
+
+Tameng melacak aktor (untuk deteksi ancaman) menggunakan data berikut: alamat IP, User-Agent, path yang diakses, fingerprint TLS/HTTP, negara (GeoIP), dan ASN. Data ini masuk kategori "dapat diidentifikasi secara tidak langsung" di bawah definisi luas UU PDP.
+
+Selain data aktor di atas, Tameng juga **memeriksa** (bukan menyimpan) body request dan response yang lewat untuk mendeteksi kebocoran PII — lihat bagian Egress Data Loss Prevention (DLP) di atas. Pemeriksaan ini transien: yang tercatat ke telemetry hanya *jenis pola* yang cocok dan *jumlah* kecocokan (contoh: `{"type": "NIK", "count": 2}`), **bukan nilai yang cocok itu sendiri**. Nomor NIK/NPWP/HP yang terdeteksi tidak pernah ditulis ke log maupun disimpan.
+
+**Kontrol yang sudah ada untuk data aktor:**
+- Penyimpanan in-memory dibatasi dua lapis: LRU eviction (bounded oleh `max_actors` di config) dan pembersihan berbasis usia — aktor yang tidak diblokir dan idle lebih dari 1 jam otomatis dihapus dari memori (aktor yang sedang diblokir dikecualikan dari pembersihan ini)
+- Akses baca ke data aktor (endpoint `/api/v1/actors` dan endpoint Reserse) memerlukan autentikasi (API key atau Basic Auth Reserse), fail-closed jika kredensial kosong
+
+> [!WARNING]
+> **Batasan yang jujur kami sampaikan:** penyimpanan on-disk (`attacker-memory.json`) saat ini bersifat append/merge-only — tidak ada mekanisme retention/TTL otomatis, dan Tameng belum menyediakan tooling bagi operator untuk memenuhi permintaan hak hapus data (right to erasure) di bawah UU PDP untuk kategori data ini. Untuk saat ini, satu-satunya jalur penghapusan adalah manual: mengedit langsung file `attacker-memory.json` di server tempat Tameng berjalan. Tercatat di roadmap.
+
 ## Forecasting Opsional
 
 Tameng menyertakan subsistem forecasting tren opsional (`internal/ml/prophet.go`, `anomaly.go`) yang shell-out ke proses Python 3 lokal untuk memprediksi tren volume gray-zone/alert. Fitur ini **nonaktif secara default** dan **tidak dibutuhkan** untuk perlindungan WAF, pencocokan signature, atau threat scoring LightGBM — ketiganya berjalan sepenuhnya di dalam satu biner Go tanpa proses eksternal apa pun.
@@ -380,6 +398,7 @@ Mengaktifkan forecasting membutuhkan instalasi Python 3 lokal dengan script di b
 - [ ] Konfigurasi durasi blokir reputasi-IP per-kategori (bukan durasi tetap tunggal)
 - [x] Dokumentasi deployment reverse-proxy (di depan backend generik)
 - [ ] Ekspansi signature WAF untuk kategori LFI/RFI
+- [ ] Mekanisme retention/TTL otomatis + endpoint penghapusan data aktor (pemenuhan hak hapus UU PDP)
 
 Punya usulan lain? Buka [issue](.github/ISSUE_TEMPLATE/feature_request.md).
 
@@ -416,6 +435,7 @@ Tameng dikembangkan dan dirawat oleh satu orang developer/security engineer asal
 - [Architecture](#architecture)
 - [Testing](#testing-en)
 - [Security & Vulnerability Reporting](#security--vulnerability-reporting)
+- [Regulatory Framework & Governance](#regulatory-framework--governance)
 - [Optional Forecasting](#optional-forecasting-en)
 - [Roadmap](#roadmap-en)
 - [Contributing](#contributing-en)
@@ -515,7 +535,7 @@ sequenceDiagram
 | Feature Pillar | Technical Mechanism | Operational Value |
 | :--- | :--- | :--- |
 | 🔄 **Outbound Stream Interception** | Intercepts chunked response bodies directly from backend applications before writing to client TCP sockets. | Zero backend application code modifications required. |
-| 🇮🇩 **Indonesian PII Patterns** | RE2 pattern matching + entropy scanning for NIK (KTP), NPWP, BPJS, and Indonesian Phone Numbers. | Tailored compliance enforcement for Indonesian Data Protection (UU PDP). |
+| 🇮🇩 **Indonesian PII Patterns** | RE2 pattern matching + entropy scanning for NIK (KTP), NPWP, BPJS, and Indonesian Phone Numbers. | Detection tailored to Indonesian data-protection requirements (UU PDP). |
 | 🔑 **Credentials & Secrets Detection** | Automated pattern matching for AWS/GCP API Keys, Private Keys (PEM), JWT tokens, and DB connection strings. | Prevents accidental secret exposure in backend debug/error log endpoints. |
 | 🎛️ **Dual Interception Modes** | **Alert Mode (default, non-disruptive)**: detect + log telemetry, traffic unaffected.<br>**Block Mode**: `403 Forbidden` -- the entire response is rejected (no redaction/masking). | Deployment flexibility: monitor false-positive rates before enabling active blocking. |
 
@@ -731,6 +751,23 @@ Every running Tameng instance serves `/.well-known/security.txt` (see `/security
 
 Please do not open a public issue for unpatched vulnerabilities — email first.
 
+## Regulatory Framework & Governance 📋
+
+Tameng is designed with consideration for principles from OJK's AI/IT governance framework ("Tata Kelola Kecerdasan Artifisial Perbankan Indonesia") — reliability, accountability, transparency, data privacy, human oversight. This is not a certification or formal compliance claim; the framework itself is guidance / a minimum reference for the financial services sector, not binding regulation. Financial institutions operating Tameng remain fully responsible for their own compliance with applicable regulations (SEOJK 29/2022, POJK 11/2022, UU PDP, etc.).
+
+### Tameng's Data-Handling Audit vs. UU PDP 27/2022
+
+Tameng tracks actors (for threat detection) using: IP address, User-Agent, accessed paths, TLS/HTTP fingerprint, country (GeoIP), and ASN. This data falls under UU PDP's broad "indirectly identifiable" definition.
+
+Beyond the actor data above, Tameng also **inspects** (does not store) request and response bodies passing through it to detect PII leaks — see the Egress Data Loss Prevention (DLP) section above. This inspection is transient: telemetry records only the *pattern type* matched and the *match count* (e.g. `{"type": "NIK", "count": 2}`), **never the matched value itself**. Detected NIK/NPWP/phone numbers are never written to logs or persisted.
+
+**Existing controls for actor data:**
+- In-memory storage is bounded two ways: LRU eviction (capped by `max_actors` in config) and age-based cleanup — non-blocked actors idle for more than 1 hour are automatically purged from memory (currently-blocked actors are exempt from this cleanup)
+- Read access to actor data (`/api/v1/actors` and the Reserse endpoints) requires authentication (API key or Reserse Basic Auth), fail-closed if credentials are empty
+
+> [!WARNING]
+> **Honest limitation:** on-disk persistence (`attacker-memory.json`) is currently append/merge-only — there is no automatic retention/TTL mechanism, and Tameng does not yet give operators tooling to fulfil a UU PDP right-to-erasure request for this data category. For now, the only deletion path is manual: directly editing the `attacker-memory.json` file on the server running Tameng. Tracked on the roadmap.
+
 ## Optional Forecasting (EN)
 
 Tameng includes an optional trend-forecasting subsystem (`internal/ml/prophet.go`, `anomaly.go`) that shells out to a local Python 3 process for gray-zone/alert-volume trend prediction. This is **disabled by default** and is **not required** for WAF protection, signature matching, or LightGBM threat scoring — all three run entirely inside the single Go binary with no external process.
@@ -743,6 +780,7 @@ Enabling forecasting requires a local Python 3 installation with the scripts und
 - [ ] Per-category configurable IP-reputation block duration (not a single fixed duration)
 - [x] Reverse-proxy deployment documentation (in front of a generic backend)
 - [ ] WAF signature expansion for LFI/RFI categories
+- [ ] Automated actor-data retention/TTL + deletion endpoint (UU PDP right-to-erasure fulfillment)
 
 Have another idea? Open a [feature request](.github/ISSUE_TEMPLATE/feature_request.md).
 
