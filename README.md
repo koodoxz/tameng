@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/koodoxz/tameng/actions"><img src="https://img.shields.io/github/actions/workflow/status/koodoxz/tameng/ci.yml?branch=main&style=flat-square&logo=github&label=CI&color=10B981" alt="CI Status"></a>
+  <a href="https://github.com/koodoxz/tameng/actions"><img src="https://img.shields.io/github/actions/workflow/status/koodoxz/tameng/ci.yml?branch=master&style=flat-square&logo=github&label=CI&color=10B981" alt="CI Status"></a>
   <img src="https://img.shields.io/badge/Go-1.26%2B-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.26+">
   <img src="https://img.shields.io/badge/License-AGPL--3.0-6366F1?style=flat-square&logo=open-source-initiative&logoColor=white" alt="License: AGPL-3.0">
   <img src="https://img.shields.io/badge/Build-Single--Binary-3B82F6?style=flat-square&logo=docker&logoColor=white" alt="Single Binary">
@@ -35,7 +35,7 @@
 
 ## Daftar Isi
 
-- [Tentang Tameng](#tentang-tameng)
+- [Tentang Tameng](#tentang-tameng-)
 - [Kenapa Tameng Berbeda](#differensiator-teknis)
 - [Fitur Keamanan Inti](#fitur-keamanan-inti)
 - [Mulai Cepat](#mulai-cepat)
@@ -44,7 +44,7 @@
 - [Arsitektur](#arsitektur)
 - [Testing](#testing)
 - [Keamanan & Pelaporan Kerentanan](#keamanan--pelaporan-kerentanan)
-- [Kerangka Regulasi & Tata Kelola](#kerangka-regulasi--tata-kelola)
+- [Kerangka Regulasi & Tata Kelola](#kerangka-regulasi--tata-kelola-)
 - [Forecasting Opsional](#forecasting-opsional)
 - [Roadmap](#roadmap)
 - [Berkontribusi](#berkontribusi)
@@ -428,7 +428,7 @@ AGPL-3.0 untuk penggunaan komunitas/open-source. Butuh lisensi dengan syarat ber
 
 ## Table of Contents
 
-- [About Tameng](#about-tameng)
+- [About Tameng](#about-tameng-)
 - [Why Tameng Is Different](#technical-differentiation)
 - [Core Security Features](#core-security-features)
 - [Quick Start](#quick-start-en)
@@ -437,7 +437,7 @@ AGPL-3.0 untuk penggunaan komunitas/open-source. Butuh lisensi dengan syarat ber
 - [Architecture](#architecture)
 - [Testing](#testing-en)
 - [Security & Vulnerability Reporting](#security--vulnerability-reporting)
-- [Regulatory Framework & Governance](#regulatory-framework--governance)
+- [Regulatory Framework & Governance](#regulatory-framework--governance-)
 - [Optional Forecasting](#optional-forecasting-en)
 - [Roadmap](#roadmap-en)
 - [Contributing](#contributing-en)
