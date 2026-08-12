@@ -73,7 +73,7 @@ waf:
 
 ml_waf:
   enabled: true
-  model_path: "/root/data/models/threat_scorer.txt"
+  model_path: "data/models/threat_scorer.txt"
   alert_threshold: 70
   block_threshold: 85
   ml_weight: 0.7

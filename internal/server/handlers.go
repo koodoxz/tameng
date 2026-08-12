@@ -1724,7 +1724,7 @@ func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 // handleGrayZone returns gray zone events
 func (s *Server) handleGrayZone(w http.ResponseWriter, r *http.Request) {
 	// Read gray-zone.json from data directory
-	dataFile := "/root/data/gray-zone.json"
+	dataFile := "data/gray-zone.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -1760,7 +1760,7 @@ func (s *Server) handleGrayZone(w http.ResponseWriter, r *http.Request) {
 
 // handleForecasts returns ML threat forecasts
 func (s *Server) handleForecasts(w http.ResponseWriter, r *http.Request) {
-	dataFile := "/root/data/forecasts/all_forecasts.json"
+	dataFile := "data/forecasts/all_forecasts.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -1799,7 +1799,7 @@ func (s *Server) handleForecasts(w http.ResponseWriter, r *http.Request) {
 
 // handleAttackerMemory returns tracked attackers
 func (s *Server) handleAttackerMemory(w http.ResponseWriter, r *http.Request) {
-	dataFile := "/root/data/attacker-memory.json"
+	dataFile := "data/attacker-memory.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -1831,7 +1831,7 @@ func (s *Server) handleAttackerMemory(w http.ResponseWriter, r *http.Request) {
 
 // handleEvolvedRules returns custom WAF rules
 func (s *Server) handleEvolvedRules(w http.ResponseWriter, r *http.Request) {
-	dataFile := "/root/data/evolved-rules.json"
+	dataFile := "data/evolved-rules.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -1860,7 +1860,7 @@ func (s *Server) handleEvolvedRules(w http.ResponseWriter, r *http.Request) {
 
 // handleReloadRules hot-reloads evolved rules from file into WAF engine
 func (s *Server) handleReloadRules(w http.ResponseWriter, r *http.Request) {
-	evolvedRulesPath := "/root/data/evolved-rules.json"
+	evolvedRulesPath := "data/evolved-rules.json"
 
 	count, err := s.waf.LoadEvolvedRules(evolvedRulesPath)
 	if err != nil {
@@ -1882,7 +1882,7 @@ func (s *Server) handleReloadRules(w http.ResponseWriter, r *http.Request) {
 
 // handleExportCSV exports gray zone events as CSV
 func (s *Server) handleExportCSV(w http.ResponseWriter, r *http.Request) {
-	dataFile := "/root/data/gray-zone.json"
+	dataFile := "data/gray-zone.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		http.Error(w, "Failed to load data", http.StatusInternalServerError)
@@ -1927,28 +1927,28 @@ func (s *Server) handleExportJSON(w http.ResponseWriter, r *http.Request) {
 	export := make(map[string]interface{})
 
 	// Gray Zone
-	if data, err := os.ReadFile("/root/data/gray-zone.json"); err == nil {
+	if data, err := os.ReadFile("data/gray-zone.json"); err == nil {
 		var gz []map[string]interface{}
 		json.Unmarshal(data, &gz)
 		export["grayZone"] = map[string]interface{}{"count": len(gz), "events": gz}
 	}
 
 	// Attackers
-	if data, err := os.ReadFile("/root/data/attacker-memory.json"); err == nil {
+	if data, err := os.ReadFile("data/attacker-memory.json"); err == nil {
 		var mem map[string]interface{}
 		json.Unmarshal(data, &mem)
 		export["attackers"] = mem
 	}
 
 	// Forecasts
-	if data, err := os.ReadFile("/root/data/forecasts/all_forecasts.json"); err == nil {
+	if data, err := os.ReadFile("data/forecasts/all_forecasts.json"); err == nil {
 		var fc []map[string]interface{}
 		json.Unmarshal(data, &fc)
 		export["forecasts"] = map[string]interface{}{"count": len(fc), "predictions": fc}
 	}
 
 	// Rules
-	if data, err := os.ReadFile("/root/data/evolved-rules.json"); err == nil {
+	if data, err := os.ReadFile("data/evolved-rules.json"); err == nil {
 		var rules []map[string]interface{}
 		json.Unmarshal(data, &rules)
 		export["evolvedRules"] = map[string]interface{}{"count": len(rules), "rules": rules}
@@ -1964,7 +1964,7 @@ func (s *Server) handleExportJSON(w http.ResponseWriter, r *http.Request) {
 
 // handleThreatTrends returns aggregated threat data for charting
 func (s *Server) handleThreatTrends(w http.ResponseWriter, r *http.Request) {
-	dataFile := "/root/data/gray-zone.json"
+	dataFile := "data/gray-zone.json"
 	data, err := os.ReadFile(dataFile)
 	if err != nil {
 		s.jsonResponse(w, http.StatusInternalServerError, map[string]interface{}{
@@ -2097,7 +2097,7 @@ func (s *Server) handleDNSBlocklist(w http.ResponseWriter, r *http.Request) {
 	var blockedIPs []map[string]interface{}
 	var blockedDomains []map[string]interface{}
 
-	dataFile := "/root/data/attacker-memory.json"
+	dataFile := "data/attacker-memory.json"
 	if data, err := os.ReadFile(dataFile); err == nil {
 		var memory map[string]interface{}
 		if err := json.Unmarshal(data, &memory); err == nil {
@@ -2124,7 +2124,7 @@ func (s *Server) handleDNSBlocklist(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read gray zone for recently blocked domains
-	gzFile := "/root/data/gray-zone.json"
+	gzFile := "data/gray-zone.json"
 	if data, err := os.ReadFile(gzFile); err == nil {
 		var events []map[string]interface{}
 		if err := json.Unmarshal(data, &events); err == nil {
@@ -2175,7 +2175,7 @@ func (s *Server) handleShieldThreats(w http.ResponseWriter, r *http.Request) {
 	var threatFingerprints []string
 
 	// Read from attacker memory (high-risk actors)
-	amFile := "/root/data/attacker-memory.json"
+	amFile := "data/attacker-memory.json"
 	if data, err := os.ReadFile(amFile); err == nil {
 		var memory map[string]interface{}
 		if err := json.Unmarshal(data, &memory); err == nil {
@@ -2228,7 +2228,7 @@ func (s *Server) handleShieldThreats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read from gray zone for recently blocked
-	gzFile := "/root/data/gray-zone.json"
+	gzFile := "data/gray-zone.json"
 	if data, err := os.ReadFile(gzFile); err == nil {
 		var events []map[string]interface{}
 		if err := json.Unmarshal(data, &events); err == nil {
@@ -2384,7 +2384,7 @@ func (s *Server) handleHeimdallReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update attacker-memory.json with new threat
-	dataFile := "/root/data/attacker-memory.json"
+	dataFile := "data/attacker-memory.json"
 	memory := make(map[string]interface{})
 	actors := make(map[string]interface{})
 

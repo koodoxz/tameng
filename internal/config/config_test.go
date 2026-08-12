@@ -386,3 +386,26 @@ func TestLoad_MalformedYAML_ReturnsError(t *testing.T) {
 		t.Fatal("Load() returned nil error, want an error for malformed YAML (pre-existing behavior)")
 	}
 }
+
+// REQ SVALINN-CONFIG-DATAPATH-RELATIVE-001
+//
+// MLEnhancedWAF.ModelPath and Countermeasures.ActionLogPath used to default
+// to absolute "/root/data/..." paths, while every other data path
+// (WAF.SignaturesPath, Database.Path) correctly defaulted to a path relative
+// to the process's working directory. Under Docker (WORKDIR /app, non-root
+// user, volume mounted at /app/data) the absolute default never resolved,
+// silently disabling the ML threat scorer and the countermeasures audit
+// log with no startup failure -- only a warning log easy to miss. Pinning
+// these defaults to relative paths keeps them consistent with the working
+// convention and prevents the absolute-path regression from resurfacing.
+func TestSetDefaults_DataPaths_AreRelativeNotRoot(t *testing.T) {
+	cfg := &Config{}
+	setDefaults(cfg)
+
+	if strings.HasPrefix(cfg.MLEnhancedWAF.ModelPath, "/") {
+		t.Errorf("MLEnhancedWAF.ModelPath default = %q, want a relative path (no leading /)", cfg.MLEnhancedWAF.ModelPath)
+	}
+	if strings.HasPrefix(cfg.Countermeasures.ActionLogPath, "/") {
+		t.Errorf("Countermeasures.ActionLogPath default = %q, want a relative path (no leading /)", cfg.Countermeasures.ActionLogPath)
+	}
+}

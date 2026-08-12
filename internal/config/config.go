@@ -565,7 +565,7 @@ func setDefaults(cfg *Config) {
 		cfg.MLEnhancedWAF.Enabled = true
 	}
 	if cfg.MLEnhancedWAF.ModelPath == "" {
-		cfg.MLEnhancedWAF.ModelPath = "/root/data/models/threat_scorer.txt"
+		cfg.MLEnhancedWAF.ModelPath = "data/models/threat_scorer.txt"
 	}
 	if cfg.MLEnhancedWAF.AlertThreshold == 0 {
 		cfg.MLEnhancedWAF.AlertThreshold = 70
@@ -1033,7 +1033,7 @@ func setDefaults(cfg *Config) {
 
 	// Countermeasures defaults
 	if cfg.Countermeasures.ActionLogPath == "" {
-		cfg.Countermeasures.ActionLogPath = "/root/data/defense-actions.json"
+		cfg.Countermeasures.ActionLogPath = "data/defense-actions.json"
 	}
 
 	// Database defaults

@@ -159,7 +159,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 	}
 
 	// Load evolved rules from file
-	evolvedRulesPath := "/root/data/evolved-rules.json"
+	evolvedRulesPath := "data/evolved-rules.json"
 	if count, err := wafEngine.LoadEvolvedRules(evolvedRulesPath); err == nil {
 		log.Info("Loaded evolved rules", "count", count, "path", evolvedRulesPath)
 	} else {
@@ -168,7 +168,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 
 	// Initialize GeoIP reader
 	var geoipReader *geoip.Reader
-	geoipPath := "/root/data/geoip/GeoLite2-Country.mmdb"
+	geoipPath := "data/geoip/GeoLite2-Country.mmdb"
 	if reader, err := geoip.New(geoipPath); err == nil {
 		geoipReader = reader
 		log.Info("Loaded GeoIP database", "path", geoipPath)
@@ -177,7 +177,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 	}
 
 	// Initialize ML Engine
-	mlEngine := ml.NewEngine("/root/svalinn-security/engine", "/root/data", true)
+	mlEngine := ml.NewEngine("scripts", "data", true)
 
 	// Initialize Advanced Security Components
 	deceptionLadder := deception.NewLadder()
@@ -348,8 +348,8 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 
 	var forecastEngine *ml.ProphetForecaster
 	if cfg.AttackForecast.Enabled {
-		forecastEngine = ml.NewProphetForecaster("/usr/bin/python3", "/root/data")
-		forecastEngine.SetScriptsDir("/root/svalinn-security/engine")
+		forecastEngine = ml.NewProphetForecaster("/usr/bin/python3", "data")
+		forecastEngine.SetScriptsDir("scripts")
 	}
 
 	var triangulationEngine *ml.TriangulationEngine
@@ -360,7 +360,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 	// Initialize Reserse Tracker for cross-IP actor correlation
 	reserseTracker := actor.NewReserseTracker(0.7) // 70% similarity threshold
 	log.Info("Reserse tracker initialized", "correlation_threshold", 0.7)
-	if count, err := reserseTracker.ImportLegacyActorMemory("/root/data/attacker-memory.json"); err != nil {
+	if count, err := reserseTracker.ImportLegacyActorMemory("data/attacker-memory.json"); err != nil {
 		log.Warn("Failed to import legacy attacker memory", "error", err)
 	} else if count > 0 {
 		log.Info("Imported legacy attacker memory into Reserse", "profiles", count)
@@ -391,7 +391,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 
 	var grayZone *actor.GrayZone
 	if cfg.Actor.Enabled {
-		grayZone = actor.NewGrayZone(cfg.Actor.GrayZoneSize, "/root/data/gray-zone.json")
+		grayZone = actor.NewGrayZone(cfg.Actor.GrayZoneSize, "data/gray-zone.json")
 	}
 
 	var activeDefense *orchestrator.Orchestrator
