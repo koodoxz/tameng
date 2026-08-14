@@ -88,6 +88,7 @@ type Server struct {
 	payloadGenerator      *payload.Generator
 	advancedEgress        *egress.Engine
 	stixEngine            *intel.STIXEngine
+	intelHub              *intel.Hub
 	businessLogic         *logic.AbuseDetector
 	semanticAnalyzer      *semantic.Analyzer
 	protocolGuard         *protocol.Guard
@@ -405,9 +406,29 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		})
 	}
 
+	var intelHub *intel.Hub
+	if cfg.Intel.Enabled {
+		intelHub = intel.NewHub(&intel.Config{
+			Enabled:      cfg.Intel.Enabled,
+			MITREEnabled: cfg.Intel.MITREEnabled,
+			STIXEnabled:  cfg.Intel.STIXEnabled,
+			FeedsEnabled: cfg.Intel.FeedsEnabled,
+			SyncInterval: cfg.Intel.SyncInterval,
+		})
+	}
+
 	var countermeasuresEngine *countermeasures.Countermeasures
 	if cfg.Countermeasures.Enabled {
 		countermeasuresEngine = countermeasures.New(cfg.Countermeasures.ActionLogPath)
+		// REQ SVALINN-COUNTERMEASURES-LOG-DURABILITY-001: a corrupted
+		// action log degrades to "no restored block state" rather than
+		// failing startup (matching the GeoIP/evolved-rules "warn but
+		// continue" convention above) -- but it must not go unnoticed,
+		// since it means every block active before the crash/restart is
+		// gone.
+		if err := countermeasuresEngine.LoadError(); err != nil {
+			log.Warn("Could not fully load countermeasures action log -- active blocks from before this restart may be lost", "error", err.Error())
+		}
 	}
 
 	s := &Server{
@@ -453,6 +474,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Server, error) {
 		grayZone:              grayZone,
 		activeDefense:         activeDefense,
 		countermeasures:       countermeasuresEngine,
+		intelHub:              intelHub,
 		heimdallDedup:         make(map[string]time.Time),
 	}
 
@@ -639,6 +661,14 @@ func (s *Server) setupMiddleware() {
 	// Rate limiting middleware
 	s.router.Use(s.rateLimitMiddleware)
 
+	// Threat intel Hub middleware (IOC blocklist) -- placed here, not
+	// alongside countermeasuresMiddleware further down, because this is a
+	// single O(1) map lookup whose verdict depends on nothing any other
+	// middleware produces; a confirmed-bad IP/domain shouldn't pay for the
+	// ~10 analyzer passes and countermeasures throttle sleep below before
+	// being rejected. REQ SVALINN-INTEL-HUB-WIRE-001 review finding.
+	s.router.Use(s.intelHubMiddleware)
+
 	// Honeypot middleware
 	s.router.Use(s.honeypotMiddleware())
 
@@ -799,6 +829,9 @@ func (s *Server) setupRoutes() {
 	v9.HandleFunc("/stix/stats", s.handleSTIXStats).Methods("GET")
 	v9.HandleFunc("/stix/export", s.handleSTIXExport).Methods("GET")
 	v9.HandleFunc("/stix/import", s.handleSTIXImport).Methods("POST")
+	v9.HandleFunc("/intel/stats", s.handleIntelStats).Methods("GET")
+	v9.HandleFunc("/intel/block", s.handleIntelBlockIOC).Methods("POST")
+	v9.HandleFunc("/intel/unblock", s.handleIntelUnblockIOC).Methods("POST")
 	v9.HandleFunc("/business-logic/stats", s.handleBusinessLogicStats).Methods("GET")
 	v9.HandleFunc("/semantic-payload/stats", s.handleSemanticPayloadStats).Methods("GET")
 	v9.HandleFunc("/protocol-guard/stats", s.handleProtocolGuardStats).Methods("GET")

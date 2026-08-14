@@ -195,6 +195,27 @@ func (h *Hub) AddIOC(ioc *IOC) {
 	}
 }
 
+// RemoveIOC removes an indicator of compromise, returning true if it existed.
+func (h *Hub) RemoveIOC(iocType, value string) bool {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	key := iocType + ":" + value
+	if _, exists := h.iocs[key]; !exists {
+		return false
+	}
+	delete(h.iocs, key)
+
+	switch iocType {
+	case "ip":
+		delete(h.blockedIPs, value)
+	case "domain":
+		delete(h.blockedDomains, value)
+	}
+
+	return true
+}
+
 // IsBlockedIP checks if an IP is in the blocklist
 func (h *Hub) IsBlockedIP(ip string) (*IOC, bool) {
 	h.lock.RLock()

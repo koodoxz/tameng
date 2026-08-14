@@ -283,7 +283,11 @@ Request yang tidak cocok dengan rute Tameng sendiri (health, metrics, TAXII, API
 | `/api/v1/actors` | GET | Active actors |
 | `/api/v1/config` | GET | Current config |
 | `/api/v9/reload` | POST | Reload config (God Mode) |
-| `/api/v9/block` | POST | Block IP (God Mode) |
+| `/api/v9/block` | POST | Block IP (God Mode; durasi block eskalasi otomatis per pelanggaran berulang, tidak diisi oleh caller) |
+| `/api/v9/unblock` | POST | Unblock IP (God Mode) |
+| `/api/v9/intel/stats` | GET | Statistik IOC blocklist Threat Intel Hub (God Mode) |
+| `/api/v9/intel/block` | POST | Tambah IOC (`type`: `ip`/`domain`, `value`, `threat_level`: `low`/`medium`/`high`/`critical`, `source`) ke blocklist Threat Intel Hub (God Mode) |
+| `/api/v9/intel/unblock` | POST | Hapus IOC (`type`, `value`) dari blocklist Threat Intel Hub (God Mode) |
 | `/reserse/actors` | GET | Reserse actor details (Basic Auth) |
 | `/reserse/actors/{id}/timeline` | GET | Timeline event untuk satu profil aktor (Basic Auth) |
 | `/reserse/actors/by-ip/{ip}/timeline` | GET | Timeline event berdasarkan IP (Basic Auth) |
@@ -292,6 +296,8 @@ Request yang tidak cocok dengan rute Tameng sendiri (health, metrics, TAXII, API
 | `/taxii/collections` | GET | Daftar koleksi TAXII |
 | `/taxii/collections/default/objects` | GET | Baca STIX indicator (public) |
 | `/taxii/collections/default/objects` | POST | Submit STIX indicator (perlu `SVALINN_API_KEY`) |
+
+> **Catatan Threat Intel Hub:** IOC blocklist hanya tersimpan di memori dan hilang setiap kali restart (tidak ada persistence layer, berbeda dengan blocklist countermeasures). `/health` dan semua path `/api/v9/intel/*` dikecualikan dari IOC blocking, sehingga operator yang IP-nya sendiri ter-IOC tetap bisa mengakses `/api/v9/intel/unblock` (tetap butuh autentikasi God-Mode) untuk membatalkannya, dan Docker healthcheck tidak akan terkunci oleh entri IOC pada loopback/hostname.
 
 ## Arsitektur
 
@@ -667,7 +673,11 @@ Any request that doesn't match one of Tameng's own routes (health, metrics, TAXI
 | `/api/v1/actors` | GET | Active actors |
 | `/api/v1/config` | GET | Current config |
 | `/api/v9/reload` | POST | Reload config (God Mode) |
-| `/api/v9/block` | POST | Block IP (God Mode) |
+| `/api/v9/block` | POST | Block IP (God Mode; block duration escalates automatically per repeat offense, not caller-supplied) |
+| `/api/v9/unblock` | POST | Unblock IP (God Mode) |
+| `/api/v9/intel/stats` | GET | Threat intel Hub IOC blocklist statistics (God Mode) |
+| `/api/v9/intel/block` | POST | Add an IOC (`type`: `ip`/`domain`, `value`, `threat_level`: `low`/`medium`/`high`/`critical`, `source`) to the threat intel Hub blocklist (God Mode) |
+| `/api/v9/intel/unblock` | POST | Remove an IOC (`type`, `value`) from the threat intel Hub blocklist (God Mode) |
 | `/reserse/actors` | GET | Reserse actor details (Basic Auth) |
 | `/reserse/actors/{id}/timeline` | GET | Timeline events for a single actor profile (Basic Auth) |
 | `/reserse/actors/by-ip/{ip}/timeline` | GET | Timeline events by IP (Basic Auth) |
@@ -676,6 +686,8 @@ Any request that doesn't match one of Tameng's own routes (health, metrics, TAXI
 | `/taxii/collections` | GET | List TAXII collections |
 | `/taxii/collections/default/objects` | GET | Read STIX indicators (public) |
 | `/taxii/collections/default/objects` | POST | Submit a STIX indicator (requires `SVALINN_API_KEY`) |
+
+> **Threat intel Hub notes:** the IOC blocklist is in-memory only and is cleared on every restart (no persistence layer, unlike the countermeasures block list). `/health` and every `/api/v9/intel/*` path are exempt from IOC blocking, so an operator whose own IP gets IOC'd can always reach `/api/v9/intel/unblock` (still God-Mode authenticated) to undo it, and the Docker healthcheck can't be bricked by an IOC'd loopback/hostname entry.
 
 ## Architecture
 
