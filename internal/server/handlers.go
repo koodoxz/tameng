@@ -1008,12 +1008,26 @@ func (s *Server) handleReload(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleBlockIP blocks an IP (God Mode only)
+// handleBlockIP blocks an IP (God Mode only). Block duration escalates
+// automatically per repeat offense via countermeasures.TempBlock -- it is
+// not caller-supplied (REQ SVALINN-GODMODE-BLOCKIP-FIX-001: this handler
+// was previously a stub that logged the request and returned a fake 200
+// without ever touching s.countermeasures, so callers believed an IP was
+// blocked when nothing was enforced. Fixed to delegate to the same
+// already-working mechanism the sibling /api/v9/countermeasures/block
+// endpoint uses).
 func (s *Server) handleBlockIP(w http.ResponseWriter, r *http.Request) {
+	if s.countermeasures == nil {
+		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"status": "error",
+			"error":  "Countermeasures not enabled",
+		})
+		return
+	}
+
 	var req struct {
-		IP       string `json:"ip"`
-		Duration string `json:"duration"`
-		Reason   string `json:"reason"`
+		IP     string `json:"ip"`
+		Reason string `json:"reason"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -1024,22 +1038,41 @@ func (s *Server) handleBlockIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.IP == "" {
+		s.jsonResponse(w, http.StatusBadRequest, map[string]interface{}{
+			"status": "error",
+			"error":  "IP required",
+		})
+		return
+	}
+
+	entry := s.countermeasures.TempBlock(req.IP, req.Reason)
+
 	s.log.Info("IP blocked via God Mode",
 		"blocked_ip", req.IP,
-		"duration", req.Duration,
+		"block_level", entry.Level,
+		"until", entry.Until,
 		"reason", req.Reason,
 		"by", s.getClientIP(r),
 	)
 
-	// TODO: Implement actual blocking
 	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"status":  "ok",
-		"message": fmt.Sprintf("IP %s blocked for %s", req.IP, req.Duration),
+		"message": fmt.Sprintf("IP %s blocked until %s", req.IP, entry.Until.Format(time.RFC3339)),
 	})
 }
 
-// handleUnblockIP unblocks an IP (God Mode only)
+// handleUnblockIP unblocks an IP (God Mode only). See handleBlockIP's
+// comment -- same fix, same REQ.
 func (s *Server) handleUnblockIP(w http.ResponseWriter, r *http.Request) {
+	if s.countermeasures == nil {
+		s.jsonResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"status": "error",
+			"error":  "Countermeasures not enabled",
+		})
+		return
+	}
+
 	var req struct {
 		IP string `json:"ip"`
 	}
@@ -1052,12 +1085,27 @@ func (s *Server) handleUnblockIP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.IP == "" {
+		s.jsonResponse(w, http.StatusBadRequest, map[string]interface{}{
+			"status": "error",
+			"error":  "IP required",
+		})
+		return
+	}
+
+	if ok := s.countermeasures.ReverseLastBlock(req.IP); !ok {
+		s.jsonResponse(w, http.StatusNotFound, map[string]interface{}{
+			"status": "error",
+			"error":  "No active block found for IP",
+		})
+		return
+	}
+
 	s.log.Info("IP unblocked via God Mode",
 		"unblocked_ip", req.IP,
 		"by", s.getClientIP(r),
 	)
 
-	// TODO: Implement actual unblocking
 	s.jsonResponse(w, http.StatusOK, map[string]interface{}{
 		"status":  "ok",
 		"message": fmt.Sprintf("IP %s unblocked", req.IP),
