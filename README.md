@@ -198,6 +198,7 @@ graph TD
 - **Go 1.26+** (build dari sumber)
 - **Docker & Docker Compose** (Docker deployment) — tidak perlu Go installed
 - **SQLite3** (embedded di binary Go, CGO diperlukan untuk build)
+- **C compiler** — hanya untuk Opsi 2 (build dari sumber), karena `CGO_ENABLED=1`: `gcc`/`build-essential` di Linux, Xcode Command Line Tools di macOS, MinGW-w64/TDM-GCC di Windows. Tidak diperlukan untuk deployment Docker.
 
 ### Opsi 1: Docker (Direkomendasikan)
 
@@ -597,6 +598,7 @@ graph TD
 - **Go 1.26+** (to build from source)
 - **Docker & Docker Compose** (Docker deployment) — Go not required
 - **SQLite3** (embedded in Go binary; CGO required for building)
+- **C compiler** — only for Option 2 (building from source), since `CGO_ENABLED=1`: `gcc`/`build-essential` on Linux, Xcode Command Line Tools on macOS, MinGW-w64/TDM-GCC on Windows. Not needed for Docker deployment.
 
 ### Option 1: Docker (Recommended)
 

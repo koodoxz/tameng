@@ -10,6 +10,8 @@ Thanks for your interest in contributing.
 
 ## Development Setup
 
+Requires Go 1.26+ and a C compiler (`CGO_ENABLED=1` is needed for the SQLite3 dependency) — `gcc`/`build-essential` on Linux, Xcode Command Line Tools on macOS, MinGW-w64/TDM-GCC on Windows.
+
 ```bash
 git clone https://github.com/koodoxz/tameng.git
 cd tameng
