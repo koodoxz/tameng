@@ -83,6 +83,16 @@ type Countermeasures struct {
 	// missing-file (fresh install) case. REQ
 	// SVALINN-COUNTERMEASURES-LOG-DURABILITY-001.
 	loadErr error
+	// saveErr captures the error from the most recent saveLog attempt, nil
+	// if that attempt succeeded. Unlike loadErr (set once at construction,
+	// before the instance is shared with any other goroutine), saveLog
+	// runs repeatedly -- on every TempBlock/Throttle/SoftIsolate/Unblock/
+	// ReverseLastBlock call -- so saveErr is reset on every successful
+	// save rather than latching a stale first-ever failure. Writes happen
+	// under the caller's already-held c.lock (matching saveLog's other
+	// call sites); SaveError() takes an RLock to read it safely from a
+	// concurrent goroutine. REQ SVALINN-COUNTERMEASURES-SAVEERROR-001.
+	saveErr error
 }
 
 // LoadError returns the error from loading the persisted action log at
@@ -92,6 +102,19 @@ type Countermeasures struct {
 // corrupted log degrades to "no restored block state," not a crash.
 func (c *Countermeasures) LoadError() error {
 	return c.loadErr
+}
+
+// SaveError returns the error from the most recent saveLog attempt, or nil
+// if that attempt succeeded (including the case where nothing has been
+// saved yet). Unlike LoadError, which reflects a single one-time event at
+// construction, SaveError reflects only the LATEST save -- a caller
+// polling this to detect an ongoing persistence problem will see it clear
+// again once persistence recovers, rather than staying permanently set
+// after one transient failure.
+func (c *Countermeasures) SaveError() error {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.saveErr
 }
 
 func New(logPath string) *Countermeasures {
@@ -447,10 +470,12 @@ func (c *Countermeasures) saveLog() {
 		return
 	}
 	if err := os.MkdirAll(filepath.Dir(c.logPath), 0755); err != nil {
+		c.saveErr = err
 		return
 	}
 	data, err := json.MarshalIndent(c.log, "", "  ")
 	if err != nil {
+		c.saveErr = err
 		return
 	}
 	// REQ SVALINN-COUNTERMEASURES-LOG-DURABILITY-001: write to a temp file
@@ -476,9 +501,14 @@ func (c *Countermeasures) saveLog() {
 	// (datacenter power loss) this deployment doesn't target.
 	tmpPath := c.logPath + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+		c.saveErr = err
 		return
 	}
-	_ = os.Rename(tmpPath, c.logPath)
+	if err := os.Rename(tmpPath, c.logPath); err != nil {
+		c.saveErr = err
+		return
+	}
+	c.saveErr = nil
 }
 
 func randomID() string {

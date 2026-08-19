@@ -173,6 +173,9 @@ func TestSaveLog_FailedWriteDoesNotCorruptExistingFile(t *testing.T) {
 	if string(after) != string(before) {
 		t.Fatal("a failed atomic write corrupted/modified the original file instead of leaving it untouched")
 	}
+	if c.SaveError() == nil {
+		t.Fatal("SaveError() is nil after a save whose WriteFile step failed -- the failure must be observable")
+	}
 }
 
 // TestNew_EmptyLogPathDoesNotPersistAndDoesNotPanic covers the
@@ -208,11 +211,14 @@ func TestSaveLog_MkdirFailureDoesNotPanic(t *testing.T) {
 	// MkdirAll(filepath.Dir(logPath), ...) cannot succeed.
 	logPath := filepath.Join(blockingFile, "nested", "defense-actions.json")
 
-	c := New(logPath) // must not panic despite an unloadable path
+	c := New(logPath)                   // must not panic despite an unloadable path
 	c.TempBlock("203.0.113.26", "test") // must not panic despite an unsaveable path
 
 	if _, blocked := c.IsBlocked("203.0.113.26"); !blocked {
 		t.Fatal("in-memory state should still update even when persistence is impossible")
+	}
+	if c.SaveError() == nil {
+		t.Fatal("SaveError() is nil after a save whose MkdirAll failed -- the failure must be observable, not just silently swallowed")
 	}
 }
 
@@ -233,4 +239,8 @@ func TestSaveLog_MarshalFailureDoesNotPanic(t *testing.T) {
 	})
 
 	c.saveLog() // must not panic
+
+	if c.SaveError() == nil {
+		t.Fatal("SaveError() is nil after a save whose json.MarshalIndent failed -- the failure must be observable")
+	}
 }
