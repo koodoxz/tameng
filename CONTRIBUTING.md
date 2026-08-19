@@ -46,4 +46,4 @@ go test -coverprofile=coverage.out ./internal/... && go tool cover -func=coverag
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the project's AGPL-3.0 license (see [LICENSE](LICENSE)).
+Contributions are covered by the [Contributor License Agreement](CLA.md), which licenses your contribution under the project's AGPL-3.0 license (see [LICENSE](LICENSE)) and preserves the option to offer Tameng under additional licensing terms in the future. An automated check will prompt you to sign it on your first pull request — it's a one-time step per GitHub account.
