@@ -10,6 +10,7 @@ jobs:
   build:
     name: Build & Test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout Source
@@ -24,8 +25,45 @@ jobs:
       - name: Go Vet
         run: go vet ./...
 
-      - name: Run Tests
-        run: go test -v ./...
+      - name: Run Tests (race detector)
+        run: go test -race -v ./...
 
       - name: Build Tameng Binary
         run: go build -v -o tameng ./cmd/svalinn
+
+  docker-smoke-test:
+    name: Docker Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t tameng:smoke-test .
+
+      - name: Verify container runs as non-root (uid 1000)
+        run: |
+          actual_uid=$(docker run --rm --entrypoint id tameng:smoke-test -u)
+          if [ "$actual_uid" != "1000" ]; then
+            echo "FAIL: expected uid 1000, got $actual_uid"
+            exit 1
+          fi
+
+      # Guards against the Dockerfile chown-ordering bug fixed in commit 4ff092d
+      # (mkdir /app/data ran as root before adduser/USER, leaving it unwritable).
+      - name: Verify /app/data is writable (plain image, no bind mount)
+        run: |
+          docker run --rm --entrypoint sh tameng:smoke-test -c \
+            "touch /app/data/smoke-test && rm /app/data/smoke-test"
+
+      # Mirrors the README's documented bind-mount caveat: a bind mount shadows
+      # the image's chown with host ownership, so docker-compose deployments
+      # need `chown -R 1000:1000 data` first. This proves that workaround works.
+      - name: Verify /app/data is writable under a bind mount (with documented chown workaround)
+        run: |
+          bind_dir=$(mktemp -d)
+          sudo chown -R 1000:1000 "$bind_dir"
+          docker run --rm -v "$bind_dir:/app/data" --entrypoint sh tameng:smoke-test -c \
+            "touch /app/data/smoke-test && rm /app/data/smoke-test"
