@@ -3,6 +3,7 @@
   <img src="https://img.shields.io/badge/Go-1.26%2B-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go 1.26+">
   <img src="https://img.shields.io/badge/License-AGPL--3.0-6366F1?style=flat-square&logo=open-source-initiative&logoColor=white" alt="License: AGPL-3.0">
   <img src="https://img.shields.io/badge/Build-Single--Binary-3B82F6?style=flat-square&logo=docker&logoColor=white" alt="Single Binary">
+  <a href="https://koodoxz.github.io"><img src="https://img.shields.io/badge/Ecosystem-Architecture%20Portal-00f2fe.svg?style=flat-square" alt="MECOB Ecosystem"></a>
   <img src="https://img.shields.io/badge/Made_in-Indonesia-EF4444?style=flat-square&logoColor=white" alt="Made in Indonesia">
 </p>
 
