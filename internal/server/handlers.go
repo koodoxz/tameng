@@ -842,7 +842,7 @@ We appreciate security researchers who help us keep SVALINN safe.
 - Physical attacks
 
 ## Rewards
-We offer recognition and potential bounties for valid reports.
+We offer formal recognition in our Security Hall of Fame for valid reports. We do not offer financial bounties at this time.
 Contact us at support@example.com
 
 ## Response Times
