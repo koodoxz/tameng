@@ -1,8 +1,11 @@
 package ml
 
 import (
+	"bufio"
+	"bytes"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -31,10 +34,25 @@ type ThreatFeatures struct {
 
 // NewThreatScorer creates a new threat scorer with LightGBM model
 func NewThreatScorer(modelPath string, logger Logger) (*ThreatScorer, error) {
-	// Try to load the model
-	model, err := leaves.LGEnsembleFromFile(modelPath, true)
+	// Try to load the model file
+	data, err := os.ReadFile(modelPath)
 	if err != nil {
-		// Model file not found - use fallback (no ML)
+		logger.Warn("LightGBM model read failed, threat scorer disabled (using rule-based only)", "path", modelPath, "error", err)
+		return &ThreatScorer{
+			model:  nil,
+			logger: logger,
+		}, nil
+	}
+
+	// REQ-SVALINN-ML-MODELVERSION-001: leaves supports format up to version=v3.
+	// LightGBM v4 text models export with version=v4 but share identical tree syntax.
+	// Transparently adapt version=v4 to version=v3 so inference succeeds.
+	if bytes.Contains(data, []byte("version=v4")) {
+		data = bytes.Replace(data, []byte("version=v4"), []byte("version=v3"), 1)
+	}
+
+	model, err := leaves.LGEnsembleFromReader(bufio.NewReader(bytes.NewReader(data)), true)
+	if err != nil {
 		logger.Warn("LightGBM model load failed, threat scorer disabled (using rule-based only)", "path", modelPath, "error", err)
 		return &ThreatScorer{
 			model:  nil,

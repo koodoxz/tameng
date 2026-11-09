@@ -479,6 +479,14 @@ func (e *Engine) Stats() map[string]int {
 func (e *Engine) loadDefaultSignatures() {
 	allTargets := []string{"path", "query", "body", "user_agent"}
 
+	// REQ-SVALINN-WAF-HEADERTARGET-001: Inspect high-risk request headers for payload
+	// injection categories (sqli, xss, rce, log4j) while excluding API tokens / SSRF to avoid FPs.
+	headerTargets := []string{"header_cookie", "header_referer", "header_x-forwarded-for", "header_x-forwarded-host"}
+	injectionTargets := append([]string{"path", "query", "body", "user_agent"}, headerTargets...)
+
+	// REQ-SVALINN-WAF-SQLICOMMENT-001: SQL token separator matching whitespace and comments (/**/, --, #)
+	sqlSep := `(?:\s|/\*.*?\*/|--[^\r\n]*(?:[\r\n]|$)|#[^\r\n]*(?:[\r\n]|$))+`
+
 	// ═══════════════════════════════════════════════════════════════
 	// SQL INJECTION (35 patterns)
 	// ═══════════════════════════════════════════════════════════════
@@ -486,7 +494,7 @@ func (e *Engine) loadDefaultSignatures() {
 		{"SQLI-001", "Classic OR/AND injection", `'\s*(OR|AND)\s+['"]?\d+['"]?\s*=\s*['"]?\d+`},
 		{"SQLI-002", "String comparison injection", `'\s*(OR|AND)\s+['"]?[a-z]+['"]?\s*=\s*['"]?[a-z]+`},
 		{"SQLI-003", "Stacked queries", `';\s*(DROP|DELETE|UPDATE|INSERT|ALTER|CREATE|TRUNCATE)`},
-		{"SQLI-004", "UNION-based injection", `UNION\s+(ALL\s+)?SELECT`},
+		{"SQLI-004", "UNION-based injection", `UNION` + sqlSep + `(?:(?:ALL|DISTINCT)` + sqlSep + `)?SELECT`},
 		{"SQLI-005", "Comment termination", `'\s*--\s*$`},
 		{"SQLI-006", "MySQL comment", `'\s*#\s*$`},
 		{"SQLI-007", "Block comment", `'\s*/\*.*\*/`},
@@ -512,7 +520,7 @@ func (e *Engine) loadDefaultSignatures() {
 		{"SQLI-063", "MongoDB $regex", `\$regex\s*:`},
 	}
 	for _, s := range sqli {
-		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "sqli", Severity: SeverityCritical, Pattern: s.pattern, Targets: allTargets, Enabled: true, Score: 1.0, MITRE: "T1190"})
+		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "sqli", Severity: SeverityCritical, Pattern: s.pattern, Targets: injectionTargets, Enabled: true, Score: 1.0, MITRE: "T1190"})
 	}
 
 	// ═══════════════════════════════════════════════════════════════
@@ -548,7 +556,7 @@ func (e *Engine) loadDefaultSignatures() {
 		{"XSS-051", "CSS url() javascript", `url\s*\(\s*javascript`},
 	}
 	for _, s := range xss {
-		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "xss", Severity: SeverityHigh, Pattern: s.pattern, Targets: allTargets, Enabled: true, Score: 0.9, MITRE: "T1059.007"})
+		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "xss", Severity: SeverityHigh, Pattern: s.pattern, Targets: injectionTargets, Enabled: true, Score: 0.9, MITRE: "T1059.007"})
 	}
 
 	// ═══════════════════════════════════════════════════════════════
@@ -581,7 +589,7 @@ func (e *Engine) loadDefaultSignatures() {
 		{"RCE-044", "Spring EL", `\$\{T\(java`},
 	}
 	for _, s := range rce {
-		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "rce", Severity: SeverityCritical, Pattern: s.pattern, Targets: allTargets, Enabled: true, Score: 1.0, MITRE: "T1059"})
+		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "rce", Severity: SeverityCritical, Pattern: s.pattern, Targets: injectionTargets, Enabled: true, Score: 1.0, MITRE: "T1059"})
 	}
 
 	// ═══════════════════════════════════════════════════════════════
@@ -731,7 +739,7 @@ func (e *Engine) loadDefaultSignatures() {
 		{"LOG-010", "RMI protocol", `rmi://`},
 	}
 	for _, s := range log4j {
-		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "log4j", Severity: SeverityCritical, Pattern: s.pattern, Targets: allTargets, Enabled: true, Score: 1.0, MITRE: "T1190"})
+		e.addSignature(&Signature{ID: s.id, Name: s.name, Category: "log4j", Severity: SeverityCritical, Pattern: s.pattern, Targets: injectionTargets, Enabled: true, Score: 1.0, MITRE: "T1190"})
 	}
 
 	// ═══════════════════════════════════════════════════════════════

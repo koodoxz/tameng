@@ -1,5 +1,5 @@
 tree
-version=v4
+version=v3
 num_class=1
 num_tree_per_iteration=1
 label_index=0
